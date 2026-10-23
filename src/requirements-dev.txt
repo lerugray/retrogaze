@@ -1,0 +1,6 @@
+# Dev/build-only dependencies (not needed in production)
+-r requirements.txt
+pytest>=7.0.0
+pytest-asyncio>=0.23.0
+scikit-image>=0.22.0
+jsmin>=3.0.0

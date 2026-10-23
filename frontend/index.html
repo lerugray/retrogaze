@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retrogaze: Classic Console Pixel Art Generator</title>
+  <meta name="description" content="Generate hardware-authentic pixel art for 7 classic systems. Real NES, SNES, Genesis, Game Boy, GBC, C64, and PC Engine constraints enforced. Game Boy Pocket is in beta through the API and MCP. Built by a game designer, not venture capital." />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://github.com/lerugray/retrogaze" />
+  <meta property="og:title"       content="Retrogaze: Classic Console Pixel Art Generator" />
+  <meta property="og:description" content="Generate hardware-authentic pixel art for 7 classic systems. Real NES, SNES, Genesis, Game Boy, GBC, C64, and PC Engine constraints enforced. Game Boy Pocket is in beta through the API and MCP. Built by a game designer, not venture capital." />
+  <meta property="og:image"       content="/og-image.png" />
+  <meta property="og:image:width"  content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="Retrogaze: Classic Console Pixel Art Generator" />
+  <meta name="twitter:description" content="Generate hardware-authentic pixel art for 7 classic systems. Real NES, SNES, Genesis, Game Boy, GBC, C64, and PC Engine constraints enforced. Game Boy Pocket is in beta through the API and MCP." />
+  <meta name="twitter:image"       content="/og-image.png" />
+
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=rg-021-2026-04-26" />
+</head>
+<body>
+
+  <a href="#page-generate" class="skip-link">Skip to main content</a>
+
+  <!-- ===== TOP NAV ===== -->
+  <nav class="topnav" role="navigation" aria-label="Main navigation">
+    <div class="topnav-inner">
+      <a class="topnav-brand" href="/">RETROGAZE</a>
+      <button class="hamburger" id="hamburger-btn" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+            <div class="topnav-links" id="topnav-links">
+        <button class="nav-link active" data-page="generate">Generate</button>
+        <a class="nav-link" href="https://github.com/lerugray/retrogaze" target="_blank" rel="noopener">Source</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== TOAST CONTAINER ===== -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- ===== FEEDBACK MODAL ===== -->
+  <div class="save-prompt-modal" id="feedback-modal" role="dialog" aria-modal="true" aria-label="Send feedback">
+    <div class="modal">
+      <button class="modal-close" id="btn-close-feedback" aria-label="Close">&times;</button>
+      <h3 style="font-family: var(--font-pixel); font-size: 0.65rem; margin-bottom: 1rem;">Send Feedback</h3>
+      <form id="feedback-form" novalidate>
+        <div class="form-group">
+          <label for="feedback-category">Category</label>
+          <select id="feedback-category">
+            <option value="bug" selected>Bug report</option>
+            <option value="idea">Feature idea</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="feedback-message">Message</label>
+          <textarea id="feedback-message" rows="5" maxlength="2000" placeholder="Describe the issue or idea..." required></textarea>
+        </div>
+        <div id="feedback-error" class="form-error hidden" role="alert"></div>
+        <div class="flex gap-3 mt-4">
+          <button type="button" class="btn btn--ghost btn--small" id="btn-cancel-feedback">Cancel</button>
+          <button type="submit" class="btn btn--primary btn--small" id="btn-send-feedback">Send</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== SAVE PROMPT TEMPLATE MODAL ===== -->
+  <div class="save-prompt-modal" id="save-prompt-modal" role="dialog" aria-modal="true" aria-label="Save prompt template">
+    <div class="modal">
+      <button class="modal-close" id="btn-close-save-prompt" aria-label="Close">&times;</button>
+      <h3 style="font-family: var(--font-pixel); font-size: 0.65rem; margin-bottom: 1rem;">Save Prompt Template</h3>
+      <form id="save-prompt-form" novalidate>
+        <div class="form-group">
+          <label for="prompt-template-name">Template Name</label>
+          <input type="text" id="prompt-template-name" placeholder="e.g. Dungeon Enemies, Hero Sprites..." maxlength="40" required />
+        </div>
+        <div id="save-prompt-error" class="form-error hidden" role="alert"></div>
+        <button type="submit" class="btn btn--primary w-full mt-4">SAVE TEMPLATE</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== GENERATE PAGE ===== -->
+  <main class="main-content">
+    <div class="page active" id="page-generate">
+      <p class="text-muted text-small" style="margin:0 0 1rem;">Free and open source. <a href="https://github.com/lerugray/retrogaze" target="_blank" rel="noopener">github.com/lerugray/retrogaze</a></p>
+
+      <!-- FORM STATE -->
+      <section id="state-form" class="state active">
+        <div class="card">
+          <form id="generate-form" novalidate>
+
+            <div class="form-group">
+              <div class="form-label-row">
+                <label for="description">Description</label>
+                <button type="button" class="btn btn--ghost btn--small" id="btn-try-example">Try an example</button>
+              </div>
+              <input
+                type="text"
+                id="description"
+                name="description"
+                placeholder="skeleton warrior, treasure chest, brick wall..."
+                autocomplete="off"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="reference-image">Reference Image (optional)</label>
+              <div class="upload-area" id="upload-area">
+                <input type="file" id="reference-image" name="reference_image" accept="image/png,image/jpeg" aria-describedby="upload-hint" />
+                <p class="upload-hint" id="upload-hint">Upload a sprite to use as style reference</p>
+                <img id="reference-preview" class="reference-preview hidden" src="" alt="Reference preview" />
+                <button type="button" class="btn btn--ghost btn--small hidden" id="btn-clear-reference">Clear</button>
+              </div>
+            </div>
+
+            <div class="form-group" id="strength-group" style="display:none">
+              <label for="reference-strength">Reference Strength</label>
+              <input type="range" id="reference-strength" name="reference_strength" min="0" max="100" value="50" />
+              <span class="range-label" id="strength-label">50%: Moderate variation</span>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="asset-type">Asset Type</label>
+                <select id="asset-type" name="asset_type">
+                  <option value="character">Character</option>
+                  <option value="enemy">Enemy</option>
+                  <option value="npc">NPC</option>
+                  <option value="item">Item</option>
+                  <option value="background_tile">Background Tile</option>
+                  <option value="ui_element">UI Element</option>
+                  <option value="ui_frame">UI Frame</option>
+                  <option value="spritesheet">Sprite Sheet</option>
+                  <option value="directional">Directional (4 views)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="size">Size</label>
+                <select id="size" name="size">
+                  <option value="8x8">8x8</option>
+                  <option value="16x16" selected>16x16</option>
+                  <option value="16x24">16x24</option>
+                  <option value="16x32">16x32</option>
+                  <option value="8x16">8x16</option>
+                </select>
+                <label class="inline-check" style="margin-top: 0.5rem;">
+                  <input type="checkbox" id="strict-size" name="strict_size" />
+                  <span class="check-label">Strict size (may reduce detail)</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="view">View</label>
+                <select id="view" name="view">
+                  <option value="side" selected>Side</option>
+                  <option value="front">Front</option>
+                  <option value="top_down">Top-down</option>
+                  <option value="three_quarter">3/4</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="palette-mood">Palette Mood</label>
+                <select id="palette-mood" name="palette_mood">
+                  <option value="auto" selected>Auto</option>
+                  <option value="warm">Warm</option>
+                  <option value="cool">Cool</option>
+                  <option value="dark">Dark</option>
+                  <option value="bright">Bright</option>
+                  <option value="earth">Earth tones</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="outline">Outline</label>
+                <select id="outline" name="outline">
+                  <option value="black" selected>Black</option>
+                  <option value="dark">Dark</option>
+                  <option value="none">No outline</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="console">Console</label>
+                <select id="console" name="console">
+                  <option value="nes" selected>NES</option>
+                  <option value="snes">SNES</option>
+                  <option value="genesis">Genesis</option>
+                  <option value="gb_dmg">Game Boy</option>
+                  <option value="gbc">Game Boy Color</option>
+                  <option value="c64">Commodore 64</option>
+                  <option value="pc_engine">PC-Engine</option>
+                </select>
+                <span class="form-hint" id="console-hint">54 fixed colors, 4 per tile, 8x8 grid</span>
+              </div>
+              <div class="form-group">
+                <label for="era">Era</label>
+                <select id="era" name="era">
+                  <option value="retro">Retro (1978-83)</option>
+                  <option value="early">Early (1983-84)</option>
+                  <option value="mid" selected>Mid (1985-86)</option>
+                  <option value="late">Late (1987+)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="background-color">Background</label>
+                <div class="bg-color-control">
+                  <label class="inline-check">
+                    <input type="checkbox" id="bg-color-toggle" />
+                    <span class="check-label">Solid color</span>
+                  </label>
+                  <input type="color" id="background-color" name="background_color" value="#000000" disabled />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="inline-check flip-check">
+                  <input type="checkbox" id="flip-horizontal" name="flip_horizontal" />
+                  <span class="check-label">Include flipped version</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="scale-factor">Export Scale</label>
+                <select id="scale-factor" name="scale_factor">
+                  <option value="1" selected>1x (native)</option>
+                  <option value="2">2x</option>
+                  <option value="3">3x</option>
+                  <option value="4">4x</option>
+                  <option value="8">8x</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="export-palette">Palette Export</label>
+                <select id="export-palette" name="export_palette">
+                  <option value="" selected>None</option>
+                  <option value="gpl">GPL (GIMP/Aseprite)</option>
+                  <option value="hex">Hex list (.txt)</option>
+                  <option value="pal">PAL (binary)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group palette-lock-group">
+              <label>Palette Lock <span class="label-hint">(optional: click colors to lock)</span></label>
+              <div class="nes-palette-grid" id="nes-palette-grid"></div>
+              <div class="locked-palette" id="locked-palette">
+                <span class="locked-label hidden" id="locked-label">Locked colors:</span>
+                <div class="locked-swatches" id="locked-swatches"></div>
+                <button type="button" class="btn btn--ghost btn--small hidden" id="btn-clear-palette">Clear</button>
+              </div>
+            </div>
+
+            <div class="form-row" id="animation-options" style="display:none">
+              <div class="form-group">
+                <label for="animation-type">Animation</label>
+                <select id="animation-type" name="animation_type">
+                  <option value="walk" selected>Walk Cycle</option>
+                  <option value="idle">Idle</option>
+                  <option value="run">Run</option>
+                  <option value="attack">Attack</option>
+                  <option value="jump">Jump</option>
+                  <option value="death">Death</option>
+                  <option value="cast">Spell Cast</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="frame-count">Frames</label>
+                <select id="frame-count" name="frame_count">
+                  <option value="2">2 frames</option>
+                  <option value="3">3 frames</option>
+                  <option value="4" selected>4 frames</option>
+                  <option value="6">6 frames</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group prompt-templates-group">
+              <label for="prompt-template-select">Saved Prompts</label>
+              <div class="prompt-template-row">
+                <select id="prompt-template-select">
+                  <option value="">Load a saved prompt</option>
+                </select>
+                <button type="button" class="btn btn--ghost btn--small" id="btn-save-prompt" title="Save current settings as a prompt template">Save</button>
+              </div>
+            </div>
+
+            <div id="form-error" class="form-error hidden" role="alert"></div>
+
+            <!-- Usage info (shown when logged in) -->
+            <div class="usage-bar-inline hidden" id="usage-bar-inline">
+              <span class="usage-text" id="usage-text-inline"></span>
+            </div>
+
+            <div class="generate-row">
+              <button type="submit" class="btn btn--primary btn--generate">
+                GENERATE
+              </button>
+              <button type="button" class="btn btn--secondary btn--generate" id="btn-variations">
+                4 VARIATIONS
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </section>
+
+      <!-- Screen reader live region for generation status -->
+      <div id="generation-status" aria-live="assertive" class="sr-only"></div>
+
+      <!-- LOADING STATE -->
+      <section id="state-loading" class="state hidden">
+        <div class="card loading-card">
+          <div class="pixel-loader" aria-label="Generating sprite">
+            <div class="pixel-grid-anim">
+              <span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <p class="loading-label">Generating<span class="blink-dots"><span>.</span><span>.</span><span>.</span></span></p>
+
+          <details class="prompt-reveal">
+            <summary>Sent prompt</summary>
+            <pre id="loading-prompt-display"></pre>
+          </details>
+        </div>
+      </section>
+
+      <!-- RESULT STATE -->
+      <section id="state-result" class="state hidden">
+        <div class="card result-card">
+
+          <div class="preview-area">
+            <div class="preview-pane preview-pane--native">
+              <span class="preview-label">Native</span>
+              <img id="result-img-native" src="" alt="Generated sprite (native size)" />
+            </div>
+            <div class="preview-pane preview-pane--zoomed">
+              <span class="preview-label">Zoomed</span>
+              <div class="zoomed-wrapper">
+                <img id="result-img-zoomed" class="pixelated" src="" alt="Generated sprite (zoomed)" />
+                <div class="tile-grid-overlay" id="tile-overlay" aria-hidden="true"></div>
+              </div>
+              <span class="preview-label hidden" id="result-dim-label"></span>
+            </div>
+          </div>
+
+          <div class="compliance-row" id="compliance-badges">
+            <span class="badge badge--console" id="badge-console">NES</span>
+            <span class="badge" id="badge-palette">PALETTE VALID</span>
+            <span class="badge" id="badge-grid">GRID ALIGNED</span>
+            <span class="badge" id="badge-colors">COLORS/TILE OK</span>
+            <span class="badge" id="badge-attr">ATTR TABLE OK</span>
+          </div>
+
+          <div class="palette-row" id="palette-display"></div>
+
+          <div class="action-row">
+            <button class="btn btn--primary" id="btn-download-png">Download PNG</button>
+            <button class="btn btn--secondary" id="btn-download-bundle">Download Bundle</button>
+            <button class="btn btn--accent" id="btn-more-like-this">More Like This</button>
+            <button class="btn btn--ghost" id="btn-generate-another">Generate Another</button>
+          </div>
+
+          <p class="result-credit-note">
+            AI-generated sprite. For production-quality art, hire a pixel artist on
+            <a href="https://www.fiverr.com/categories/graphics-design/pixel-art" target="_blank" rel="noopener">Fiverr</a> or
+            <a href="https://itch.io/jobs" target="_blank" rel="noopener">itch.io</a>.
+          </p>
+
+          <details class="metadata-panel" id="metadata-panel">
+            <summary class="metadata-toggle">Metadata</summary>
+            <pre id="metadata-display" class="metadata-content"></pre>
+          </details>
+
+        </div>
+      </section>
+
+      <!-- ERROR STATE -->
+      <section id="state-error" class="state hidden">
+        <div class="card error-card">
+          <p class="error-icon">!</p>
+          <h2 class="error-title">Generation Failed</h2>
+          <p id="error-message" class="error-message"></p>
+          <button class="btn btn--ghost" id="btn-error-back">Try Again</button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p class="footer-tagline">Built by a game designer, not venture capital.</p>
+    <p class="footer-secondary">Pixel art generation for 7 classic systems in the app, plus Game Boy Pocket in beta through the API and MCP. Real hardware constraints enforced: palette, tile limits, grid.</p>
+    <p class="footer-meta">
+      <a href="/">Home</a> &nbsp;|&nbsp;
+      <a href="/gallery">Gallery</a> &nbsp;|&nbsp;
+      <a href="/ethics">Ethics</a> &nbsp;|&nbsp;
+      <a href="/help">Help</a> &nbsp;|&nbsp;
+      <a href="/changelog">Changelog</a> &nbsp;|&nbsp;
+      <a href="/mcp-server">MCP</a> &nbsp;|&nbsp;
+      <a href="/terms">Terms</a> &nbsp;|&nbsp;
+      <a href="/privacy">Privacy</a>
+      &nbsp;|&nbsp;
+      <a href="https://github.com/lerugray/retrogaze" target="_blank" rel="noopener">Source</a>
+      &nbsp;|&nbsp;
+      <button type="button" class="btn btn--ghost btn--small footer-feedback-btn" id="btn-feedback">Feedback</button>
+    </p>
+  </footer>
+
+  <!-- Cache-bust query bumped per-deploy when app.js semantics change so
+       Cloudflare edge + user browsers force-revalidate. Bump the string
+       (not just the number) to avoid accidental collisions. -->
+  <script src="app.js?v=rg-021-2026-04-26"></script>
+  <script>
+    /* Demo mode: the server forces 1 image per request and refuses reference
+       uploads, so do not offer those controls here. */
+    fetch('/config').then(function (r) { return r.ok ? r.json() : null; }).then(function (c) {
+      if (!c || !c.demo) return;
+      var note = 'Self-host to enable';
+      var v = document.getElementById('btn-variations');
+      if (v) { v.disabled = true; v.title = note; v.textContent = '4 VARIATIONS: ' + note.toUpperCase(); }
+      var f = document.getElementById('reference-image');
+      if (f) f.disabled = true;
+      var h = document.getElementById('upload-hint');
+      if (h) h.textContent = 'Reference upload is off on the free demo. ' + note + '.';
+      var m = document.getElementById('btn-more-like-this');
+      if (m) { m.disabled = true; m.title = note; m.textContent = 'MORE LIKE THIS: ' + note.toUpperCase(); }
+      var fb = document.getElementById('btn-feedback');
+      if (fb) {
+        var a = document.createElement('a');
+        a.className = 'btn btn--ghost btn--small footer-feedback-btn';
+        a.href = 'https://github.com/lerugray/retrogaze/issues';
+        a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = 'Report an issue on GitHub';
+        fb.replaceWith(a);
+      }
+    }).catch(function () {});
+  </script>
+</body>
+</html>

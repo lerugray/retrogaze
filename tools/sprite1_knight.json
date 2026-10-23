@@ -1,0 +1,49 @@
+[
+  {"tool": "create_canvas", "args": {"width": 32, "height": 32, "color_mode": "rgb"}, "label": "create 32x32 canvas"},
+  {"tool": "set_palette", "args": {"sprite_path": "SPRITE", "colors": ["#000000", "#787878", "#F83800", "#BCBCBC"]}, "label": "set 4-color palette"},
+
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 11, "y": 2, "width": 10, "height": 4, "color": "#787878", "filled": true}, "label": "helmet body"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 14, "y": 0, "width": 4, "height": 3, "color": "#F83800", "filled": true}, "label": "plume"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 13, "y": 5, "width": 6, "height": 2, "color": "#000000", "filled": true}, "label": "visor slit black"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 9, "y": 7, "width": 14, "height": 12, "color": "#787878", "filled": true}, "label": "torso armor"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 10, "y": 15, "width": 12, "height": 4, "color": "#F83800", "filled": true}, "label": "tunic strip"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 3, "y": 8, "width": 6, "height": 8, "color": "#787878", "filled": true}, "label": "shield"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 24, "y": 4, "width": 2, "height": 16, "color": "#787878", "filled": true}, "label": "sword blade"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 22, "y": 18, "width": 6, "height": 2, "color": "#787878", "filled": true}, "label": "sword crossguard"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 11, "y": 19, "width": 4, "height": 9, "color": "#787878", "filled": true}, "label": "left leg"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 17, "y": 19, "width": 4, "height": 9, "color": "#787878", "filled": true}, "label": "right leg"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 10, "y": 26, "width": 6, "height": 4, "color": "#F83800", "filled": true}, "label": "left boot"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 16, "y": 26, "width": 6, "height": 4, "color": "#F83800", "filled": true}, "label": "right boot"},
+
+  {"tool": "draw_pixels", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "pixels": [
+    {"x": 11, "y": 2, "color": "#BCBCBC"}, {"x": 12, "y": 2, "color": "#BCBCBC"},
+    {"x": 11, "y": 3, "color": "#BCBCBC"}, {"x": 12, "y": 3, "color": "#BCBCBC"},
+    {"x": 14, "y": 0, "color": "#BCBCBC"}, {"x": 15, "y": 0, "color": "#BCBCBC"},
+    {"x": 14, "y": 1, "color": "#BCBCBC"}, {"x": 15, "y": 1, "color": "#BCBCBC"},
+    {"x": 3, "y": 8, "color": "#BCBCBC"}, {"x": 4, "y": 8, "color": "#BCBCBC"},
+    {"x": 3, "y": 9, "color": "#BCBCBC"}, {"x": 4, "y": 9, "color": "#BCBCBC"},
+    {"x": 5, "y": 10, "color": "#F83800"}, {"x": 6, "y": 10, "color": "#F83800"},
+    {"x": 5, "y": 11, "color": "#F83800"}, {"x": 6, "y": 11, "color": "#F83800"},
+    {"x": 5, "y": 12, "color": "#F83800"}, {"x": 6, "y": 12, "color": "#F83800"},
+    {"x": 4, "y": 11, "color": "#F83800"}, {"x": 7, "y": 11, "color": "#F83800"},
+    {"x": 9, "y": 7, "color": "#BCBCBC"}, {"x": 10, "y": 7, "color": "#BCBCBC"},
+    {"x": 9, "y": 8, "color": "#BCBCBC"}, {"x": 10, "y": 8, "color": "#BCBCBC"},
+    {"x": 9, "y": 9, "color": "#BCBCBC"}, {"x": 10, "y": 9, "color": "#BCBCBC"},
+    {"x": 24, "y": 4, "color": "#BCBCBC"}, {"x": 25, "y": 4, "color": "#BCBCBC"},
+    {"x": 24, "y": 5, "color": "#BCBCBC"}, {"x": 25, "y": 5, "color": "#BCBCBC"},
+    {"x": 24, "y": 20, "color": "#F83800"}, {"x": 25, "y": 20, "color": "#F83800"},
+    {"x": 24, "y": 21, "color": "#F83800"}, {"x": 25, "y": 21, "color": "#F83800"},
+    {"x": 11, "y": 19, "color": "#BCBCBC"}, {"x": 12, "y": 19, "color": "#BCBCBC"},
+    {"x": 11, "y": 20, "color": "#BCBCBC"}, {"x": 12, "y": 20, "color": "#BCBCBC"},
+    {"x": 17, "y": 19, "color": "#BCBCBC"}, {"x": 18, "y": 19, "color": "#BCBCBC"},
+    {"x": 17, "y": 20, "color": "#BCBCBC"}, {"x": 18, "y": 20, "color": "#BCBCBC"},
+    {"x": 14, "y": 5, "color": "#F83800"}, {"x": 15, "y": 5, "color": "#F83800"},
+    {"x": 14, "y": 6, "color": "#F83800"}, {"x": 15, "y": 6, "color": "#F83800"},
+    {"x": 17, "y": 5, "color": "#F83800"}, {"x": 18, "y": 5, "color": "#F83800"},
+    {"x": 17, "y": 6, "color": "#F83800"}, {"x": 18, "y": 6, "color": "#F83800"}
+  ]}, "label": "details highlights eyes"},
+
+  {"tool": "apply_outline", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "color": "#000000", "thickness": 1}, "label": "apply 1px outline"},
+
+  {"tool": "export_sprite", "args": {"sprite_path": "SPRITE", "output_path": "OUTPUT_DIR/sprite1_knight.png", "format": "png", "frame_number": 1}, "label": "export PNG"}
+]

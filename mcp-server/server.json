@@ -1,0 +1,19 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.lerugray/retrogaze",
+  "title": "Retrogaze: Classic Console Pixel Art Intelligence",
+  "description": "Hardware-accurate pixel art generation for classic consoles. Prompt engineering, constraint validation, and palette tools for MCP clients using pixel-mcp.",
+  "version": "1.0.0",
+  "websiteUrl": "https://github.com/lerugray/retrogaze",
+  "repository": {
+    "url": "https://github.com/lerugray/retrogaze",
+    "source": "github"
+  },
+  "icons": [],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "tool": "manual",
+      "version": "0.1.0"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+[
+  {"tool": "create_canvas", "args": {"width": 32, "height": 32, "color_mode": "rgb"}, "label": "create 32x32 canvas"},
+  {"tool": "set_palette", "args": {"sprite_path": "SPRITE", "colors": ["#181848", "#3B0076", "#6A12C2", "#A862FE", "#F8D878", "#F83800"]}, "label": "set 6-color palette"},
+
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 10, "y": 2, "width": 12, "height": 8, "color": "#6A12C2", "filled": true}, "label": "hood midtone base"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 15, "y": 6, "width": 7, "height": 4, "color": "#3B0076", "filled": true}, "label": "hood shadow right"},
+  {"tool": "draw_pixels", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "pixels": [
+    {"x": 10, "y": 2, "color": "#A862FE"}, {"x": 11, "y": 2, "color": "#A862FE"},
+    {"x": 10, "y": 3, "color": "#A862FE"}, {"x": 11, "y": 3, "color": "#A862FE"},
+    {"x": 12, "y": 2, "color": "#A862FE"}, {"x": 13, "y": 2, "color": "#A862FE"},
+    {"x": 10, "y": 4, "color": "#A862FE"}, {"x": 11, "y": 4, "color": "#A862FE"}
+  ]}, "label": "hood highlight top-left"},
+
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 12, "y": 7, "width": 6, "height": 4, "color": "#F8D878", "filled": true}, "label": "face skin"},
+  {"tool": "draw_pixels", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "pixels": [
+    {"x": 13, "y": 8, "color": "#181848"}, {"x": 14, "y": 8, "color": "#181848"},
+    {"x": 13, "y": 9, "color": "#181848"}, {"x": 14, "y": 9, "color": "#181848"},
+    {"x": 16, "y": 8, "color": "#181848"}, {"x": 17, "y": 8, "color": "#181848"},
+    {"x": 16, "y": 9, "color": "#181848"}, {"x": 17, "y": 9, "color": "#181848"}
+  ]}, "label": "eyes 2x2 each"},
+
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 8, "y": 11, "width": 16, "height": 14, "color": "#6A12C2", "filled": true}, "label": "robe midtone body"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 17, "y": 11, "width": 7, "height": 14, "color": "#3B0076", "filled": true}, "label": "robe shadow right side"},
+  {"tool": "draw_pixels", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "pixels": [
+    {"x": 8, "y": 11, "color": "#A862FE"}, {"x": 9, "y": 11, "color": "#A862FE"},
+    {"x": 8, "y": 12, "color": "#A862FE"}, {"x": 9, "y": 12, "color": "#A862FE"},
+    {"x": 8, "y": 13, "color": "#A862FE"}, {"x": 9, "y": 13, "color": "#A862FE"},
+    {"x": 10, "y": 11, "color": "#A862FE"}, {"x": 11, "y": 11, "color": "#A862FE"}
+  ]}, "label": "robe highlight top-left"},
+
+  {"tool": "draw_pixels", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "pixels": [
+    {"x": 8, "y": 23, "color": "#6A12C2"}, {"x": 9, "y": 24, "color": "#6A12C2"},
+    {"x": 23, "y": 23, "color": "#3B0076"}, {"x": 22, "y": 24, "color": "#3B0076"},
+    {"x": 10, "y": 25, "color": "#00000000"}, {"x": 11, "y": 25, "color": "#00000000"},
+    {"x": 20, "y": 25, "color": "#00000000"}, {"x": 21, "y": 25, "color": "#00000000"},
+    {"x": 8, "y": 25, "color": "#00000000"}, {"x": 9, "y": 25, "color": "#00000000"},
+    {"x": 22, "y": 25, "color": "#00000000"}, {"x": 23, "y": 25, "color": "#00000000"},
+    {"x": 8, "y": 24, "color": "#00000000"}, {"x": 23, "y": 24, "color": "#00000000"}
+  ]}, "label": "robe hem jagged edges"},
+
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 5, "y": 1, "width": 2, "height": 24, "color": "#3B0076", "filled": true}, "label": "staff shaft shadow"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 5, "y": 1, "width": 2, "height": 12, "color": "#6A12C2", "filled": true}, "label": "staff shaft upper midtone"},
+  {"tool": "draw_pixels", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "pixels": [
+    {"x": 5, "y": 1, "color": "#A862FE"}, {"x": 5, "y": 2, "color": "#A862FE"},
+    {"x": 5, "y": 3, "color": "#A862FE"}, {"x": 5, "y": 4, "color": "#A862FE"}
+  ]}, "label": "staff highlight top"},
+
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 4, "y": 0, "width": 4, "height": 2, "color": "#F83800", "filled": true}, "label": "staff gem base"},
+  {"tool": "draw_pixels", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "pixels": [
+    {"x": 5, "y": 0, "color": "#F8D878"}, {"x": 6, "y": 0, "color": "#F8D878"}
+  ]}, "label": "gem highlight"},
+
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 12, "y": 26, "width": 4, "height": 4, "color": "#F8D878", "filled": true}, "label": "left foot/shoe"},
+  {"tool": "draw_rectangle", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "x": 17, "y": 26, "width": 4, "height": 4, "color": "#F8D878", "filled": true}, "label": "right foot/shoe"},
+
+  {"tool": "draw_pixels", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "pixels": [
+    {"x": 10, "y": 14, "color": "#F8D878"}, {"x": 11, "y": 14, "color": "#F8D878"},
+    {"x": 10, "y": 15, "color": "#F8D878"}, {"x": 11, "y": 15, "color": "#F8D878"}
+  ]}, "label": "hand holding staff"},
+
+  {"tool": "apply_outline", "args": {"sprite_path": "SPRITE", "layer_name": "Layer 1", "frame_number": 1, "color": "#181848", "thickness": 1}, "label": "apply 1px navy outline"},
+
+  {"tool": "export_sprite", "args": {"sprite_path": "SPRITE", "output_path": "OUTPUT_DIR/sprite2_mage.png", "format": "png", "frame_number": 1}, "label": "export PNG"}
+]

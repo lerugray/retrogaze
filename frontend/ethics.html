@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retrogaze: Ethics &amp; the Pixel Art Community</title>
+  <meta name="description" content="How Retrogaze works, what it doesn't do, and what we owe to the pixel artists who built the classic console aesthetic over four decades." />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="/ethics" />
+  <meta property="og:title"       content="Retrogaze: Ethics &amp; the Pixel Art Community" />
+  <meta property="og:description" content="How Retrogaze works, what it doesn't do, and what we owe to the pixel artists who built the classic console aesthetic over four decades." />
+  <meta property="og:image"       content="/og-image.png" />
+  <meta property="og:image:width"  content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="Retrogaze: Ethics &amp; the Pixel Art Community" />
+  <meta name="twitter:description" content="How Retrogaze works, what it doesn't do, and what we owe to the pixel artists who built the classic console aesthetic." />
+  <meta name="twitter:image"       content="/og-image.png" />
+
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Custom properties (mirrors landing page identity) ────────────── */
+    :root {
+      --color-accent:  #F83800;
+      --color-blue:    #6888FC;
+      --color-bg:      #0C0C0C;
+      --color-surface: #1A1A2E;
+      --color-text:    #F8F8F8;
+      --color-success: #00A800;
+      --color-muted:   #ABABAB;
+      --color-warning: #F8B800;
+      --color-border:  rgba(255,255,255,0.10);
+      --font-pixel:    'Press Start 2P', monospace;
+      --font-body:     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* ── Reset ────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    /* ── Base ─────────────────────────────────────────────────────────── */
+    body {
+      background-color: var(--color-bg);
+      background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 8px 8px;
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a { color: var(--color-blue); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { text-decoration-thickness: 2px; }
+    .nav-link, .btn, .btn-outline, .nav-brand a { text-decoration: none; }
+
+    :focus-visible { outline: 2px solid var(--color-blue); outline-offset: 2px; }
+
+    /* ── CRT / scanline overlay ───────────────────────────────────────── */
+    body::before {
+      content: '';
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,0.08) 3px,
+        rgba(0,0,0,0.08) 4px
+      );
+    }
+
+    /* ── Utility ──────────────────────────────────────────────────────── */
+    .pixel { font-family: var(--font-pixel); }
+    .accent { color: var(--color-accent); }
+    .blue   { color: var(--color-blue); }
+    .muted  { color: var(--color-muted); }
+    .warning { color: var(--color-warning); }
+
+    .section-label {
+      font-family: var(--font-pixel);
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 1.25rem;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Nav ──────────────────────────────────────────────────────────── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(12,12,12,0.92);
+      backdrop-filter: blur(4px);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+    }
+    .nav-brand {
+      font-family: var(--font-pixel);
+      font-size: 0.85rem;
+      color: var(--color-accent);
+      letter-spacing: 0.05em;
+    }
+    .nav-brand a { color: inherit; text-decoration: none; }
+
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-link {
+      font-family: var(--font-pixel);
+      font-size: 0.6rem;
+      color: var(--color-muted);
+      letter-spacing: 0.1em;
+    }
+    .nav-link:hover { color: var(--color-text); text-decoration: none; }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      min-width: 44px;
+      min-height: 44px;
+    }
+    .hamburger span {
+      display: block;
+      width: 20px;
+      height: 2px;
+      background: var(--color-text);
+      transition: transform 150ms, opacity 150ms;
+    }
+    .hamburger[aria-expanded="true"] span:nth-child(1) {
+      transform: translateY(6px) rotate(45deg);
+    }
+    .hamburger[aria-expanded="true"] span:nth-child(2) {
+      opacity: 0;
+    }
+    .hamburger[aria-expanded="true"] span:nth-child(3) {
+      transform: translateY(-6px) rotate(-45deg);
+    }
+
+    .btn {
+      display: inline-block;
+      font-family: var(--font-pixel);
+      font-size: 0.7rem;
+      padding: 0.85rem 1.5rem;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.4;
+      transition: transform 60ms, box-shadow 60ms;
+    }
+    .btn:active { transform: translateY(2px); }
+    .btn-outline {
+      background: transparent;
+      color: var(--color-text);
+      border: 2px solid rgba(255,255,255,0.35);
+      box-shadow: none;
+      text-decoration: none;
+    }
+    .btn-outline:hover { border-color: var(--color-blue); color: var(--color-blue); text-decoration: none; }
+
+    /* ── Page header ──────────────────────────────────────────────────── */
+    .page-header {
+      position: relative;
+      padding: 5rem 2rem 3rem;
+      text-align: center;
+      overflow: hidden;
+    }
+    .page-header::before,
+    .page-header::after {
+      content: '';
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-color: var(--color-accent);
+      border-style: solid;
+      opacity: 0.5;
+    }
+    .page-header::before { top: 2rem; left: 2rem; border-width: 3px 0 0 3px; }
+    .page-header::after  { bottom: 2rem; right: 2rem; border-width: 0 3px 3px 0; }
+
+    .page-header h1 {
+      font-family: var(--font-pixel);
+      font-size: clamp(0.9rem, 3vw, 1.4rem);
+      color: var(--color-accent);
+      line-height: 1.6;
+      text-shadow: 4px 4px 0 #8B1A00;
+      margin-bottom: 1rem;
+    }
+    .page-header .subtitle {
+      font-size: 1.05rem;
+      color: var(--color-muted);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── Content sections ─────────────────────────────────────────────── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: 0;
+    }
+
+    .section {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+    }
+
+    .section h2 {
+      font-family: var(--font-pixel);
+      font-size: clamp(0.7rem, 1.8vw, 0.85rem);
+      color: var(--color-text);
+      margin-bottom: 1.5rem;
+      line-height: 1.8;
+    }
+
+    .section p {
+      font-size: 1.05rem;
+      color: var(--color-muted);
+      line-height: 1.85;
+      margin-bottom: 1.25rem;
+    }
+
+    .section p strong {
+      color: var(--color-text);
+    }
+
+    .section p em {
+      color: var(--color-warning);
+      font-style: normal;
+    }
+
+    /* ── Studio list ──────────────────────────────────────────────────── */
+    .studio-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .studio-card {
+      background: var(--color-surface);
+      padding: 1.25rem 1.5rem;
+      border: 1px solid var(--color-border);
+    }
+    .studio-card .studio-name {
+      font-family: var(--font-pixel);
+      font-size: 0.6rem;
+      color: var(--color-warning);
+      margin-bottom: 0.5rem;
+      line-height: 1.6;
+    }
+    .studio-card .studio-games {
+      font-size: 0.9rem;
+      color: var(--color-muted);
+      line-height: 1.6;
+    }
+
+    /* ── Commitments list ─────────────────────────────────────────────── */
+    .surface-bg {
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .commitments {
+      list-style: none;
+      border: 1px solid var(--color-border);
+    }
+    .commitments li {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 1rem;
+      color: var(--color-muted);
+      line-height: 1.7;
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+    .commitments li:last-child { border-bottom: none; }
+    .commitments li::before {
+      content: '>';
+      color: var(--color-success);
+      font-family: var(--font-pixel);
+      font-size: 0.7rem;
+      flex-shrink: 0;
+    }
+    .commitments li strong {
+      color: var(--color-text);
+    }
+    .commitment-group-label {
+      font-family: var(--font-pixel);
+      font-size: 0.55rem;
+      letter-spacing: 0.2em;
+      color: var(--color-warning);
+      text-transform: uppercase;
+      padding: 1rem 1.5rem 0.5rem;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .commitment-group-label + li { /* no extra top spacing needed */ }
+    .commitments .commitment-title {
+      display: block;
+      color: var(--color-text);
+      font-size: 1.05rem;
+      margin-bottom: 0.35rem;
+    }
+    .commitments .commitment-detail {
+      display: block;
+      font-size: 0.95rem;
+      color: var(--color-muted);
+      line-height: 1.7;
+    }
+    .commitment-group-label::before {
+      content: none !important;
+    }
+
+    /* ── Footer ───────────────────────────────────────────────────────── */
+    .footer {
+      padding: 3rem 2rem;
+      text-align: center;
+      border-top: 1px solid var(--color-border);
+    }
+    .footer-brand {
+      font-family: var(--font-pixel);
+      font-size: 0.7rem;
+      color: var(--color-accent);
+      margin-bottom: 0.75rem;
+    }
+    .footer-tagline {
+      font-family: var(--font-pixel);
+      font-size: 0.55rem;
+      color: var(--color-muted);
+      letter-spacing: 0.15em;
+      margin-bottom: 1.5rem;
+      line-height: 2;
+    }
+    .footer-meta {
+      font-size: 0.85rem;
+      color: var(--color-muted);
+    }
+    .footer-meta a { color: var(--color-blue); }
+    .footer-meta a:hover { text-decoration: underline; }
+
+    /* ── Responsive ───────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .nav { padding: 0.875rem 1rem; flex-wrap: wrap; }
+      .hamburger { display: flex; }
+      .nav-links {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        gap: 0;
+        padding-top: 0.5rem;
+      }
+      .nav-links.open { display: flex; }
+      .nav-link {
+        padding: 0.75rem 0;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+      }
+      .page-header { padding: 3.5rem 1rem 2.5rem; }
+      .section { padding: 3rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <a href="#main-content" class="sr-only" style="position:absolute;top:-100%;left:0;z-index:1000;padding:0.5rem 1rem;background:var(--color-accent);color:#fff;text-decoration:none;" onfocus="this.style.top='0'" onblur="this.style.top='-100%'">Skip to main content</a>
+
+  <!-- ── Navigation ──────────────────────────────────────────────────── -->
+  <nav class="nav" aria-label="Main navigation">
+    <span class="nav-brand"><a href="/">RETROGAZE</a></span>
+    <button class="hamburger" id="hamburger-btn" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="nav-links">
+      <a href="/gallery" class="nav-link">GALLERY</a>
+      <a href="/mcp-server" class="nav-link">MCP</a>
+      <a href="/ethics" class="nav-link">ETHICS</a>
+      <a href="/help" class="nav-link">HELP</a>
+      <a href="/changelog" class="nav-link">CHANGELOG</a>
+      <a href="https://github.com/lerugray/retrogaze" class="nav-link" target="_blank" rel="noopener">SOURCE</a>
+      <a href="/app" class="btn btn-outline">OPEN APP</a>
+    </div>
+  </nav>
+
+  <main id="main-content">
+
+  <!-- ── Page Header ─────────────────────────────────────────────────── -->
+  <section class="page-header">
+    <span class="section-label">// ETHICS</span>
+    <h1>AI, PIXEL ART, AND<br />WHAT WE OWE</h1>
+    <p class="subtitle">
+      The pixel art community has good reasons to distrust AI art tools.
+      This page is about how Retrogaze works, what it doesn't do, and where
+      we think support should go.
+    </p>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ── How It Actually Works ────────────────────────────────────────── -->
+  <div class="section">
+    <span class="section-label">// HOW IT WORKS</span>
+    <h2>WE DIDN'T TRAIN A MODEL</h2>
+
+    <p>
+      Retrogaze does not train on pixel art. We don't scrape itch.io, we don't
+      harvest DeviantArt portfolios, and we don't fine-tune on anyone's work.
+      The underlying image generation uses a general-purpose model that
+      already exists as public infrastructure at this point. It's there whether
+      we use it or not, and pretending otherwise helps nobody.
+    </p>
+    <p>
+      We built the constraint layer on top. Every classic console had rigid
+      hardware rules: limited palettes, per-tile color budgets, strict
+      sprite sizes. Retrogaze generates a draft image and then enforces the
+      target console's constraints, the same way the actual hardware would
+      have rejected anything that broke the rules. Our value is the technical
+      enforcement, not the model.
+    </p>
+    <p>
+      There is no ethical consumption under capitalism. What we can control is
+      what we build on top of these models: tools that are useful,
+      that send support back to real artists rather than
+      away from them.
+    </p>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── The Tradition ────────────────────────────────────────────────── -->
+  <div class="section">
+    <span class="section-label">// CREDIT WHERE IT'S DUE</span>
+    <h2>THE PEOPLE WHO BUILT THIS AESTHETIC</h2>
+
+    <p>
+      The classic console look didn't come from nowhere. Individual artists
+      working under brutal hardware limitations built the visual language
+      that people are still drawn to forty years later. Dithering patterns,
+      color clustering, the specific proportions that make a sprite read at
+      16&times;16 pixels. These people figured all of it out, one console
+      at a time.
+    </p>
+
+    <h3 class="pixel" style="font-size:0.6rem; color:var(--color-warning); margin:2.5rem 0 1rem; letter-spacing:0.15em;">NES / FAMICOM</h3>
+
+    <div class="studio-grid">
+      <div class="studio-card">
+        <p class="studio-name">KAZUKO SHIBUYA</p>
+        <p class="studio-games">Final Fantasy I &amp; II pixel art (Square). Drew every sprite, menu, and battle background. Adapted Amano's paintings into 16&times;16 characters.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">AKIRA KITAMURA</p>
+        <p class="studio-games">Created Mega Man (Capcom). Designed the sprite first, then had it illustrated. A reverse character design process. Left games in the early 1990s.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">HIROJI KIYOTAKE</p>
+        <p class="studio-games">Designed Samus Aran for Metroid (Nintendo). First designer on the project despite no Famicom experience. Later created Wario.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">TAKASHI TEZUKA</p>
+        <p class="studio-games">Drew the pixel art sprites for Super Mario Bros (Nintendo). The game was made by five people.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">NORIYASU TOGAKUSHI</p>
+        <p class="studio-games">Primary artist of the NES Castlevania trilogy (Konami). Created the pixel art and visual style that defined the series.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">HIROYUKI KAGOYA</p>
+        <p class="studio-games">Character designer for Blaster Master and Mr. Gimmick (Sunsoft). Quit before Gimmick shipped due to frustration with management.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">MASAHIRO SAKURAI</p>
+        <p class="studio-games">Created Kirby at age 19 (HAL Laboratory). Originally a placeholder blob named Popopo. Directed Kirby's Adventure for NES.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">AKIRA TORIYAMA</p>
+        <p class="studio-games">Character and monster designer for Dragon Quest (Enix). His drawings were adapted into sprites by the Chunsoft team, whose pixel artists remain uncredited.</p>
+      </div>
+    </div>
+
+    <h3 class="pixel" style="font-size:0.6rem; color:var(--color-warning); margin:2.5rem 0 1rem; letter-spacing:0.15em;">GAME BOY / GAME BOY COLOR</h3>
+
+    <div class="studio-grid">
+      <div class="studio-card">
+        <p class="studio-name">KEN SUGIMORI</p>
+        <p class="studio-games">Art director and sprite artist for Pok&eacute;mon Red &amp; Blue (Game Freak). Led a four-person sprite team. Also drew all the official watercolor artwork.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">ATSUKO NISHIDA</p>
+        <p class="studio-games">Sprite artist for Pok&eacute;mon Red &amp; Blue (Game Freak). Designed and drew Pikachu, Bulbasaur, Charmander, and Squirtle. One of four artists who built every monster in the original game.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">MASANAO ARIMOTO</p>
+        <p class="studio-games">Drew nearly all in-game graphics for The Legend of Zelda: Link's Awakening (Nintendo). Credited for "all pictures except the opening and ending."</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">TOMOYOSHI YAMANE</p>
+        <p class="studio-games">Graphic designer on Metroid II (Nintendo R&amp;D1). Redesigned the Varia Suit specifically for the Game Boy's screen. That design carried through to Super Metroid and beyond.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">YUSUKE NAKANO</p>
+        <p class="studio-games">Character designer for Zelda: Oracle of Ages &amp; Oracle of Seasons (Capcom Flagship / Nintendo). Drew characters and world art for both GBC Zelda games.</p>
+      </div>
+    </div>
+
+    <h3 class="pixel" style="font-size:0.6rem; color:var(--color-warning); margin:2.5rem 0 1rem; letter-spacing:0.15em;">COMMODORE 64</h3>
+
+    <div class="studio-grid">
+      <div class="studio-card">
+        <p class="studio-name">MANFRED TRENZ</p>
+        <p class="studio-games">Designer, programmer, and artist of Turrican (Rainbow Arts, 1990). The C64 version represents the platform's technical ceiling: smooth scrolling, detailed sprites, layered backgrounds. All one person.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">HUGH RILEY</p>
+        <p class="studio-games">Graphics artist for The Last Ninja and Last Ninja 2 (System 3). Drew all isometric environment art and character sprites. Called Last Ninja his "first real game."</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">STEVE ROWLANDS</p>
+        <p class="studio-games">Artist half of the Rowlands brothers at Apex. Drew all graphics for Creatures (1990) and Mayhem in Monsterland (1993). Designed sprites on paper first, then recreated them pixel by pixel on the C64.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">ANDREAS ESCHER</p>
+        <p class="studio-games">Graphics artist at Rainbow Arts. Created sprites and environments for Katakis (1988) and Turrican II (1991). Childhood friend of Manfred Trenz; started as an office machine mechanic, broke into games through his C64 pixel art.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">BOB STEVENSON</p>
+        <p class="studio-games">Main graphic artist on Myth: History in the Making (System 3, 1989). Created the iconic rendered scene graphics for The Pawn (Magnetic Scrolls, 1986). Known for precisely rendered static scenes within C64 constraints.</p>
+      </div>
+    </div>
+
+    <h3 class="pixel" style="font-size:0.6rem; color:var(--color-warning); margin:2.5rem 0 1rem; letter-spacing:0.15em;">SEGA GENESIS / MEGA DRIVE</h3>
+
+    <div class="studio-grid">
+      <div class="studio-card">
+        <p class="studio-name">NAOTO OHSHIMA</p>
+        <p class="studio-games">Character designer on Sonic the Hedgehog (Sega, 1991). Created Sonic's look and Dr. Eggman. Credited under the alias "Bigisland" in the original game.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">RIEKO KODAMA</p>
+        <p class="studio-games">Graphic designer on Phantasy Star II, director of Phantasy Star IV (Sega). Background artist on Sonic 1. One of the industry's first prominent women in game art. Passed away in 2022.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">JINA ISHIWATARI</p>
+        <p class="studio-games">Background pixel artist on Sonic the Hedgehog (Sega). Spent a full year drawing and refining Green Hill Zone, then six months on the remaining stages. Credited as "Jinya."</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">AYANO KOSHIRO</p>
+        <p class="studio-games">Chief graphic designer on Streets of Rage 2 (Ancient / Sega, 1992). Designed characters and redrew outsourced enemy sprites that failed her quality standards.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">TETSUHIKO KIKUCHI</p>
+        <p class="studio-games">Graphic designer and character creator on Gunstar Heroes (Treasure, 1993). Credited as "HAN" and "Cool Character Creator" in-game. Set the look for everything Treasure made after.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">TORU YOSHIDA</p>
+        <p class="studio-games">Graphic designer on Phantasy Star IV (Sega, 1993). Character designer on Phantasy Star II. Co-directed PSIV alongside Rieko Kodama.</p>
+      </div>
+    </div>
+
+    <h3 class="pixel" style="font-size:0.6rem; color:var(--color-warning); margin:2.5rem 0 1rem; letter-spacing:0.15em;">SUPER NINTENDO / SUPER FAMICOM</h3>
+
+    <div class="studio-grid">
+      <div class="studio-card">
+        <p class="studio-name">HISASHI NOGAMI</p>
+        <p class="studio-games">Character designer on Yoshi's Island (Nintendo, 1995). Created the hand-drawn art style by literally drawing sprites with markers, scanning them, and approximating them pixel by pixel.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">STEVE MAYLES</p>
+        <p class="studio-games">Character designer and sprite artist on Donkey Kong Country 1 &amp; 2 (Rare). Created King K. Rool, Dixie Kong, and most Kremlings. Built 3D models on SGI workstations, then compressed them into SNES sprites.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">TOMOYOSHI YAMANE</p>
+        <p class="studio-games">Graphics artist on Super Metroid (Nintendo R&amp;D1, 1994). Designed opening and ending sequences, enemies, and finalized Mother Brain's appearance. Also redesigned the Varia Suit on Game Boy.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">TORU OSAWA</p>
+        <p class="studio-games">Graphics artist on Super Metroid (Nintendo R&amp;D1). Designed Kraid, the initial Mother Brain, the map and inventory screens, and smaller enemies.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">HAYATO KAJI</p>
+        <p class="studio-games">Object designer on Mega Man X (Capcom, 1993). Illustrated X and several Maverick bosses including Spark Mandrill and Launch Octopus. Credited under alias "Rippa H.K."</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">SHINICHI KAMEOKA</p>
+        <p class="studio-games">Player character sprite designer on Secret of Mana (Square, 1993). Animated all three playable characters and designed bosses including Hexas and Wall Face.</p>
+      </div>
+    </div>
+
+    <h3 class="pixel" style="font-size:0.6rem; color:var(--color-warning); margin:2.5rem 0 1rem; letter-spacing:0.15em;">PC ENGINE / TURBOGRAFX-16</h3>
+
+    <div class="studio-grid">
+      <div class="studio-card">
+        <p class="studio-name">TOSHIHARU FURUKAWA</p>
+        <p class="studio-games">Character designer on Castlevania: Rondo of Blood (Konami, 1993). Designed Medusa, Carmilla, and the rest of the enemy cast. Discussed his approach in the CD liner notes interview.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">YOSHITERU TSUJINO</p>
+        <p class="studio-games">Character designer and painter for the Tengai Makyou series (Red Company / Hudson Soft). Painted all the character and world art for the series. Former animator at Telecom Animation Film. Credited as "Torajiro."</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">HIDEKI YAMAGUCHI</p>
+        <p class="studio-games">Graphic designer on Soldier Blade (Hudson Soft, 1992). Drew pixel art for the Prototype boss and Zeograd enemies. Credited as "Ruraboh." Edited the game's 20th anniversary retrospective.</p>
+      </div>
+      <div class="studio-card">
+        <p class="studio-name">AKIO OYABU</p>
+        <p class="studio-games">Character designer on R-Type (Irem, 1987). Designed all bosses including Dobkeratops, drawing them on paper and converting to pixel art himself. His arcade art was faithfully ported to PC Engine by Hudson Soft.</p>
+      </div>
+    </div>
+
+    <p>
+      Many more names belong on these lists. Japanese studios routinely
+      required staff to use pseudonyms in credits to prevent poaching.
+      Konami's Castlevania team hid behind horror film puns. Others were never
+      credited at all. The Chunsoft pixel artists who turned Toriyama's
+      Dragon Quest drawings into sprites have never been publicly identified.
+      The Pok&eacute;mon Red sprite team of four is confirmed, but who drew
+      which monster is not. PC Engine and Game Boy teams are especially
+      underdocumented in English sources. If you know who they are, we want
+      to hear from you.
+    </p>
+
+    <p>
+      These people solved problems that still don't have better answers. How
+      do you make a character expressive with 3 colors and 64 pixels? How do
+      you convey speed with a 9-bit palette? How do you build a world that
+      feels vast on a screen that can only hold 960 tiles? Every console had
+      different constraints, and different artists engineered around them in
+      ways we're still learning from.
+    </p>
+    <p>
+      Retrogaze exists because of their work. We owe them more than a
+      paragraph each.
+    </p>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── What Retrogaze Is and Isn't ──────────────────────────────────── -->
+  <div class="surface-bg">
+    <div class="section">
+      <span class="section-label">// SCOPE</span>
+      <h2>WHAT THIS TOOL IS AND ISN'T</h2>
+
+      <p>
+        Retrogaze is a prototyping tool for developers who can't draw. Solo devs,
+        hobbyists, game jam participants who need a placeholder sprite to keep
+        building. If you can code a platformer but you can't draw a character to
+        put in it, this gets you past that wall so you can keep working.
+      </p>
+      <p>
+        The output is a draft, a starting point. If your game reaches the
+        point where you're shipping it to real players, hire a real artist.
+        The constraint validation tools work on hand-drawn art too, so when
+        you bring an artist on, Retrogaze stays useful to both of you.
+      </p>
+      <p>
+        AI-generated art is not as good as hand-drawn work. You will need a
+        pixel artist if you're serious about shipping. Retrogaze fills the gap
+        between "I have a game idea" and "I can afford to commission final art,"
+        and we'd rather be upfront about where that gap starts and ends.
+      </p>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── Find a Pixel Artist ─────────────────────────────────────────── -->
+  <div class="section">
+    <span class="section-label">// FIND A PIXEL ARTIST</span>
+    <h2>WHERE TO HIRE A PIXEL ARTIST</h2>
+
+    <p>
+      If your project is past the prototype stage, these are starting
+      points for finding pixel artists who take commissions.
+    </p>
+
+    <ul class="commitments">
+      <li>
+        <span class="commitment-title">
+          <a href="https://www.fiverr.com/categories/graphics-design/pixel-art" target="_blank" rel="noopener">Fiverr: Pixel Art</a>
+        </span>
+        <span class="commitment-detail">Browse pixel artists by style, console era, and budget. Filter by reviews and turnaround time.</span>
+      </li>
+      <li>
+        <span class="commitment-title">
+          <a href="https://itch.io/jobs" target="_blank" rel="noopener">itch.io: Jobs Board</a>
+        </span>
+        <span class="commitment-detail">The indie game community's hiring board. Many pixel artists already work with solo devs and small studios here.</span>
+      </li>
+    </ul>
+
+    <p>
+      The pixel art community on Twitter, Bluesky, and Discord is also a
+      strong way to find artists whose specific style matches your project.
+      If a Retrogaze sprite gets you halfway, hiring an artist for the
+      final pass is often more affordable than people assume.
+    </p>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── Commitments ──────────────────────────────────────────────────── -->
+  <div class="section">
+    <span class="section-label">// COMMITMENTS</span>
+    <h2>WHAT WE'RE DOING ABOUT IT</h2>
+
+    <p>
+      Retrogaze is now free and open source, so there is no revenue to share.
+    </p>
+
+    <ul class="commitments">
+      <li class="commitment-group-label">Giving Back</li>
+      <li>
+        <span class="commitment-title">Artist recommendations in the app</span>
+        <span class="commitment-detail">After you generate a sprite, Retrogaze suggests real pixel artists who work in retro console styles. You see real artists when you use the tool, and you can hire them on the spot.</span>
+      </li>
+      <li>
+        <span class="commitment-title">Real artists for our own branding</span>
+        <span class="commitment-detail">All Retrogaze marketing art, tutorial content, and branding will be commissioned from working pixel artists. No AI art in our own marketing.</span>
+      </li>
+      <li>
+        <span class="commitment-title">Support pixel art jams</span>
+        <span class="commitment-detail">Game jams that ban AI assets are doing the right thing for their communities. We'll say so publicly and point people to them.</span>
+      </li>
+      <li>
+        <span class="commitment-title">Artist spotlight program</span>
+        <span class="commitment-detail">Feature real pixel artists on the site with links to their portfolios and commission pages.</span>
+      </li>
+      <li class="commitment-group-label" style="margin-top: 0.5rem;">Accountability</li>
+      <li>
+        <span class="commitment-title">Transparency, always</span>
+        <span class="commitment-detail">AI-generated output should be labeled as such. Retrogaze will always be upfront about what the tool is and how it works. If someone criticizes us, we'll listen. Hiding behind "but we support artists" when the criticism is valid helps no one.</span>
+      </li>
+    </ul>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── Who Built This ───────────────────────────────────────────────── -->
+  <div class="section">
+    <span class="section-label">// WHO'S BEHIND THIS</span>
+    <h2>BUILT BY A GAME DESIGNER</h2>
+
+    <p>
+      Retrogaze is a solo project. I'm a wargame designer, been making
+      games for about a decade, and I run a small publishing company. I
+      built this because I needed it for my own projects and figured other
+      people in the same situation might too.
+    </p>
+    <p>
+      The pixel art community's distrust of AI tools is earned. Too many of
+      these products launched with scraping-first, ethics-never attitudes and
+      the people making them did not care about the communities they were
+      pulling from. I can't undo that damage, but I can build something that
+      takes the concerns on from the start instead of bolting on an ethics
+      page after someone calls you out on Twitter.
+    </p>
+    <p>
+      If you've got questions about any of this, or you're a pixel artist who
+      wants to talk about what "supporting the community" should look
+      like in practice, I want to hear from you.
+    </p>
+  </div>
+
+  </main>
+
+  <!-- ── Footer ────────────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <p class="footer-brand">RETROGAZE</p>
+    <p class="footer-tagline">
+      Built by a game designer,<br />not venture capital.
+    </p>
+    <p class="footer-meta">
+      &copy; 2026 Retrogaze &nbsp;|&nbsp;
+      <a href="/">Home</a> &nbsp;|&nbsp;
+      <a href="/gallery">Gallery</a> &nbsp;|&nbsp;
+      <a href="/mcp-server">MCP</a> &nbsp;|&nbsp;
+      <a href="/help">Help</a> &nbsp;|&nbsp;
+      <a href="/terms">Terms</a> &nbsp;|&nbsp;
+      <a href="/privacy">Privacy</a> &nbsp;|&nbsp;
+      <a href="/app">Open App</a> &nbsp;|&nbsp;
+      <a href="https://github.com/lerugray/retrogaze" target="_blank" rel="noopener">Source</a> &nbsp;|&nbsp;
+      <a href="https://usedevforge.com/" target="_blank" rel="noopener">Devforge</a>
+    </p>
+  </footer>
+
+<script>
+// Hamburger menu toggle
+(function() {
+  var btn = document.getElementById('hamburger-btn');
+  var menu = document.getElementById('nav-links');
+  if (btn && menu) {
+    btn.addEventListener('click', function() {
+      var open = menu.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+})();
+</script>
+</body>
+</html>

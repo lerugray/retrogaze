@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retrogaze: Privacy</title>
+  <meta name="description" content="How the free Retrogaze demo handles prompts, images, and IP addresses." />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="/privacy" />
+  <meta property="og:title"       content="Retrogaze: Privacy" />
+  <meta property="og:description" content="How the free Retrogaze demo handles prompts, images, and IP addresses." />
+  <meta property="og:image"       content="/og-image.png" />
+  <meta property="og:image:width"  content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="Retrogaze: Privacy" />
+  <meta name="twitter:description" content="How the free Retrogaze demo handles prompts, images, and IP addresses." />
+  <meta name="twitter:image"       content="/og-image.png" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --color-accent:  #F83800;
+      --color-blue:    #6888FC;
+      --color-bg:      #0C0C0C;
+      --color-text:    #F8F8F8;
+      --color-muted:   #ABABAB;
+      --color-border:  rgba(255,255,255,0.10);
+      --font-pixel:    'Press Start 2P', monospace;
+      --font-body:     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background-color: var(--color-bg);
+      background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 8px 8px;
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    a { color: var(--color-blue); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { text-decoration-thickness: 2px; }
+    .nav-link, .btn, .btn-outline, .nav-brand a { text-decoration: none; }
+    :focus-visible { outline: 2px solid var(--color-blue); outline-offset: 2px; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(12,12,12,0.92); backdrop-filter: blur(4px);
+      border-bottom: 1px solid var(--color-border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem;
+    }
+    .nav-brand {
+      font-family: var(--font-pixel); font-size: 0.85rem;
+      color: var(--color-accent); letter-spacing: 0.05em;
+    }
+    .nav-brand a { color: inherit; text-decoration: none; }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-link {
+      font-family: var(--font-pixel); font-size: 0.6rem;
+      color: var(--color-muted); letter-spacing: 0.1em;
+    }
+    .nav-link:hover { color: var(--color-text); text-decoration: none; }
+    .hamburger {
+      display: none; flex-direction: column; justify-content: center; gap: 4px;
+      background: none; border: none; cursor: pointer; padding: 8px;
+      min-width: 44px; min-height: 44px;
+    }
+    .hamburger span {
+      display: block; width: 20px; height: 2px; background: var(--color-text);
+      transition: transform 150ms, opacity 150ms;
+    }
+    .hamburger[aria-expanded="true"] span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .hamburger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+    .hamburger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+    .btn {
+      display: inline-block; font-family: var(--font-pixel); font-size: 0.7rem;
+      padding: 0.85rem 1.5rem; border: none; cursor: pointer; text-align: center;
+      line-height: 1.4;
+    }
+    .btn-outline {
+      background: transparent; color: var(--color-text);
+      border: 2px solid rgba(255,255,255,0.35); text-decoration: none;
+    }
+    .btn-outline:hover { border-color: var(--color-blue); color: var(--color-blue); text-decoration: none; }
+    /* ── CRT / scanline overlay ───────────────────────────────────────── */
+    body::before {
+      content: '';
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,0.08) 3px,
+        rgba(0,0,0,0.08) 4px
+      );
+    }
+    .page-header {
+      position: relative; overflow: hidden;
+      padding: 4rem 2rem 2rem; text-align: center;
+    }
+    .page-header::before,
+    .page-header::after {
+      content: '';
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-color: var(--color-accent);
+      border-style: solid;
+      opacity: 0.5;
+    }
+    .page-header::before { top: 2rem; left: 2rem; border-width: 3px 0 0 3px; }
+    .page-header::after  { bottom: 2rem; right: 2rem; border-width: 0 3px 3px 0; }
+    .page-header h1 {
+      font-family: var(--font-pixel); font-size: clamp(0.9rem, 3vw, 1.2rem);
+      color: var(--color-accent); line-height: 1.6;
+      text-shadow: 4px 4px 0 #8B1A00; margin-bottom: 0.75rem;
+    }
+    .section-label {
+      font-family: var(--font-pixel); font-size: 0.65rem; letter-spacing: 0.2em;
+      color: var(--color-muted); text-transform: uppercase; display: block; margin-bottom: 1.25rem;
+    }
+    .legal-body {
+      max-width: 40rem; margin: 0 auto; padding: 0 1.5rem 4rem;
+    }
+    .legal-body p { margin-top: 1rem; color: var(--color-text); }
+    .footer {
+      border-top: 1px solid var(--color-border);
+      padding: 3rem 2rem; text-align: center;
+    }
+    .footer-brand {
+      font-family: var(--font-pixel); font-size: 0.7rem;
+      color: var(--color-accent); margin-bottom: 0.75rem;
+    }
+    .footer-tagline {
+      font-family: var(--font-pixel); font-size: 0.55rem;
+      color: var(--color-muted); letter-spacing: 0.15em;
+      margin-bottom: 1.5rem; line-height: 2;
+    }
+    .footer-meta { font-size: 0.85rem; color: var(--color-muted); }
+    .footer-meta a { color: var(--color-blue); }
+    .footer-meta a:hover { text-decoration: underline; }
+    @media (max-width: 600px) {
+      .nav { padding: 0.875rem 1rem; flex-wrap: wrap; }
+      .hamburger { display: flex; }
+      .nav-links {
+        display: none; width: 100%; flex-direction: column; gap: 0; padding-top: 0.5rem;
+      }
+      .nav-links.open { display: flex; }
+      .nav-link {
+        padding: 0.75rem 0; min-height: 48px;
+        display: flex; align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="sr-only" style="position:absolute;top:-100%;left:0;z-index:1000;padding:0.5rem 1rem;background:var(--color-accent);color:#fff;text-decoration:none;" onfocus="this.style.top='0'" onblur="this.style.top='-100%'">Skip to main content</a>
+
+  <nav class="nav" aria-label="Main navigation">
+    <span class="nav-brand"><a href="/">RETROGAZE</a></span>
+    <button class="hamburger" id="hamburger-btn" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="nav-links">
+      <a href="/gallery" class="nav-link">GALLERY</a>
+      <a href="/mcp-server" class="nav-link">MCP</a>
+      <a href="/ethics" class="nav-link">ETHICS</a>
+      <a href="/help" class="nav-link">HELP</a>
+      <a href="/changelog" class="nav-link">CHANGELOG</a>
+      <a href="https://github.com/lerugray/retrogaze" class="nav-link" target="_blank" rel="noopener">SOURCE</a>
+      <a href="/app" class="btn btn-outline">OPEN APP</a>
+    </div>
+  </nav>
+
+  <main id="main-content">
+    <section class="page-header">
+      <span class="section-label">// PRIVACY</span>
+      <h1>PRIVACY</h1>
+    </section>
+    <div class="legal-body">
+      <p>Retrogaze is free and open source. There are no accounts and nothing is sold.</p>
+      <p>When you generate on the hosted demo, the site sends your text prompt to fal.ai, which makes the image. The site uses your IP address only to apply rate limits and does not keep a profile on you.</p>
+      <p>Run it yourself: <a href="https://github.com/lerugray/retrogaze">github.com/lerugray/retrogaze</a>.</p>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p class="footer-brand">RETROGAZE</p>
+    <p class="footer-tagline">
+      Built by a game designer,<br />not venture capital.
+    </p>
+    <p class="footer-meta">
+      &copy; 2026 Retrogaze &nbsp;|&nbsp;
+      <a href="/">Home</a> &nbsp;|&nbsp;
+      <a href="/gallery">Gallery</a> &nbsp;|&nbsp;
+      <a href="/mcp-server">MCP</a> &nbsp;|&nbsp;
+      <a href="/ethics">Ethics</a> &nbsp;|&nbsp;
+      <a href="/terms">Terms</a> &nbsp;|&nbsp;
+      <a href="/privacy">Privacy</a> &nbsp;|&nbsp;
+      <a href="/app">Open App</a> &nbsp;|&nbsp;
+      <a href="https://github.com/lerugray/retrogaze" target="_blank" rel="noopener">Source</a> &nbsp;|&nbsp;
+      <a href="https://usedevforge.com/" target="_blank" rel="noopener">Devforge</a>
+    </p>
+  </footer>
+
+<script>
+(function() {
+  var btn = document.getElementById('hamburger-btn');
+  var menu = document.getElementById('nav-links');
+  if (btn && menu) {
+    btn.addEventListener('click', function() {
+      var open = menu.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+})();
+</script>
+</body>
+</html>

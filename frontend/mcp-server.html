@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retrogaze: MCP Server for Claude Code</title>
+  <meta name="description" content="Draw hardware-authentic pixel art natively in Aseprite via Claude Code. Bring your own model, Retrogaze provides the console constraint intelligence." />
+
+  <!-- Open Graph -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="/mcp-server" />
+  <meta property="og:title"       content="Retrogaze: MCP Server for Claude Code" />
+  <meta property="og:description" content="Draw hardware-authentic pixel art natively in Aseprite via Claude Code. Bring your own model, Retrogaze provides the console constraint intelligence." />
+  <meta property="og:image"       content="/og-image.png" />
+  <meta property="og:image:width"  content="1200" />
+  <meta property="og:image:height" content="630" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="Retrogaze: MCP Server for Claude Code" />
+  <meta name="twitter:description" content="Draw hardware-authentic pixel art natively in Aseprite. Bring your own Claude model." />
+  <meta name="twitter:image"       content="/og-image.png" />
+
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Custom properties (mirrors landing page identity) ────────────── */
+    :root {
+      --color-accent:  #F83800;
+      --color-blue:    #6888FC;
+      --color-bg:      #0C0C0C;
+      --color-surface: #1A1A2E;
+      --color-text:    #F8F8F8;
+      --color-success: #00A800;
+      --color-muted:   #ABABAB;
+      --color-warning: #F8B800;
+      --color-border:  rgba(255,255,255,0.10);
+      --font-pixel:    'Press Start 2P', monospace;
+      --font-body:     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    /* ── Reset ────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    /* ── Base ─────────────────────────────────────────────────────────── */
+    body {
+      background-color: var(--color-bg);
+      background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 8px 8px;
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a { color: var(--color-blue); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { text-decoration-thickness: 2px; }
+    .nav-link, .btn, .btn-outline, .nav-brand a { text-decoration: none; }
+
+    :focus-visible { outline: 2px solid var(--color-blue); outline-offset: 2px; }
+
+    /* ── CRT / scanline overlay ───────────────────────────────────────── */
+    body::before {
+      content: '';
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,0.08) 3px,
+        rgba(0,0,0,0.08) 4px
+      );
+    }
+
+    /* ── Utility ──────────────────────────────────────────────────────── */
+    .pixel { font-family: var(--font-pixel); }
+    .accent { color: var(--color-accent); }
+    .blue   { color: var(--color-blue); }
+    .muted  { color: var(--color-muted); }
+    .warning { color: var(--color-warning); }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .section-label {
+      font-family: var(--font-pixel);
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 1.25rem;
+    }
+
+    /* ── Nav ──────────────────────────────────────────────────────────── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(12,12,12,0.92);
+      backdrop-filter: blur(4px);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+    }
+    .nav-brand {
+      font-family: var(--font-pixel);
+      font-size: 0.85rem;
+      color: var(--color-accent);
+      letter-spacing: 0.05em;
+    }
+    .nav-brand a { color: inherit; text-decoration: none; }
+
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-link {
+      font-family: var(--font-pixel);
+      font-size: 0.6rem;
+      color: var(--color-muted);
+      letter-spacing: 0.1em;
+    }
+    .nav-link:hover { color: var(--color-text); text-decoration: none; }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      min-width: 44px;
+      min-height: 44px;
+    }
+    .hamburger span {
+      display: block;
+      width: 20px;
+      height: 2px;
+      background: var(--color-text);
+      transition: transform 150ms, opacity 150ms;
+    }
+    .hamburger[aria-expanded="true"] span:nth-child(1) {
+      transform: translateY(6px) rotate(45deg);
+    }
+    .hamburger[aria-expanded="true"] span:nth-child(2) {
+      opacity: 0;
+    }
+    .hamburger[aria-expanded="true"] span:nth-child(3) {
+      transform: translateY(-6px) rotate(-45deg);
+    }
+
+    .btn {
+      display: inline-block;
+      font-family: var(--font-pixel);
+      font-size: 0.7rem;
+      padding: 0.85rem 1.5rem;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.4;
+      transition: transform 60ms, box-shadow 60ms;
+    }
+    .btn:active { transform: translateY(2px); }
+    .btn-outline {
+      background: transparent;
+      color: var(--color-text);
+      border: 2px solid rgba(255,255,255,0.35);
+      box-shadow: none;
+      text-decoration: none;
+    }
+    .btn-outline:hover { border-color: var(--color-blue); color: var(--color-blue); text-decoration: none; }
+
+    /* ── Page header ──────────────────────────────────────────────────── */
+    .page-header {
+      position: relative;
+      padding: 5rem 2rem 3rem;
+      text-align: center;
+      overflow: hidden;
+    }
+    .page-header::before,
+    .page-header::after {
+      content: '';
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-color: var(--color-accent);
+      border-style: solid;
+      opacity: 0.5;
+    }
+    .page-header::before { top: 2rem; left: 2rem; border-width: 3px 0 0 3px; }
+    .page-header::after  { bottom: 2rem; right: 2rem; border-width: 0 3px 3px 0; }
+
+    .page-header h1 {
+      font-family: var(--font-pixel);
+      font-size: clamp(0.9rem, 3vw, 1.4rem);
+      color: var(--color-accent);
+      line-height: 1.6;
+      text-shadow: 4px 4px 0 #8B1A00;
+      margin-bottom: 1rem;
+    }
+    .page-header .subtitle {
+      font-size: 1.05rem;
+      color: var(--color-muted);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── Content sections ─────────────────────────────────────────────── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--color-border);
+      margin: 0;
+    }
+
+    .section {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+    }
+
+    .section h2 {
+      font-family: var(--font-pixel);
+      font-size: clamp(0.7rem, 1.8vw, 0.85rem);
+      color: var(--color-text);
+      margin-bottom: 1.5rem;
+      line-height: 1.8;
+    }
+
+    .section p {
+      font-size: 1.05rem;
+      color: var(--color-muted);
+      line-height: 1.85;
+      margin-bottom: 1.25rem;
+    }
+
+    .section p strong {
+      color: var(--color-text);
+    }
+
+    /* ── Tools grid ──────────────────────────────────────────────────── */
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .tool-card {
+      background: var(--color-surface);
+      padding: 1.25rem 1.5rem;
+      border: 1px solid var(--color-border);
+    }
+    .tool-card .tool-name {
+      font-family: var(--font-pixel);
+      font-size: 0.55rem;
+      color: var(--color-warning);
+      margin-bottom: 0.5rem;
+      line-height: 1.6;
+    }
+    .tool-card .tool-desc {
+      font-size: 0.95rem;
+      color: var(--color-muted);
+      line-height: 1.6;
+    }
+
+    /* ── Config block ─────────────────────────────────────────────────── */
+    .surface-bg {
+      background: var(--color-surface);
+      border-top: 1px solid var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .config-block {
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      padding: 1.25rem 1.5rem;
+      margin: 1.5rem 0;
+      overflow-x: auto;
+    }
+    .config-block pre {
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.85rem;
+      color: var(--color-text);
+      line-height: 1.7;
+      white-space: pre;
+      margin: 0;
+    }
+    .config-label {
+      font-family: var(--font-pixel);
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      color: var(--color-blue);
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    /* ── Steps ────────────────────────────────────────────────────────── */
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      border: 1px solid var(--color-border);
+    }
+    .steps li {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 1rem;
+      color: var(--color-muted);
+      line-height: 1.7;
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+    .steps li:last-child { border-bottom: none; }
+    .steps li::before {
+      counter-increment: step;
+      content: counter(step);
+      color: var(--color-accent);
+      font-family: var(--font-pixel);
+      font-size: 0.7rem;
+      flex-shrink: 0;
+    }
+    .steps li strong {
+      color: var(--color-text);
+    }
+
+    /* ── Console table ────────────────────────────────────────────────── */
+    .console-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2rem 0;
+      font-size: 0.95rem;
+    }
+    .console-table th {
+      font-family: var(--font-pixel);
+      font-size: 0.55rem;
+      color: var(--color-warning);
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border-bottom: 2px solid var(--color-border);
+      letter-spacing: 0.1em;
+    }
+    .console-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--color-border);
+      color: var(--color-muted);
+    }
+    .console-table td strong {
+      color: var(--color-text);
+    }
+    .console-table tr:last-child td { border-bottom: none; }
+
+    /* ── Footer ───────────────────────────────────────────────────────── */
+    .footer {
+      padding: 3rem 2rem;
+      text-align: center;
+      border-top: 1px solid var(--color-border);
+    }
+    .footer-brand {
+      font-family: var(--font-pixel);
+      font-size: 0.7rem;
+      color: var(--color-accent);
+      margin-bottom: 0.75rem;
+    }
+    .footer-tagline {
+      font-family: var(--font-pixel);
+      font-size: 0.55rem;
+      color: var(--color-muted);
+      letter-spacing: 0.15em;
+      margin-bottom: 1.5rem;
+      line-height: 2;
+    }
+    .footer-meta {
+      font-size: 0.85rem;
+      color: var(--color-muted);
+    }
+    .footer-meta a { color: var(--color-blue); }
+    .footer-meta a:hover { text-decoration: underline; }
+
+    /* ── Responsive ───────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .nav { padding: 0.875rem 1rem; flex-wrap: wrap; }
+      .hamburger { display: flex; }
+      .nav-links {
+        display: none;
+        width: 100%;
+        flex-direction: column;
+        gap: 0;
+        padding-top: 0.5rem;
+      }
+      .nav-links.open { display: flex; }
+      .nav-link {
+        padding: 0.75rem 0;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+      }
+      .page-header { padding: 3.5rem 1rem 2.5rem; }
+      .section { padding: 3rem 1rem; }
+      .tool-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <a href="#main-content" class="sr-only" style="position:absolute;top:-100%;left:0;z-index:1000;padding:0.5rem 1rem;background:var(--color-accent);color:#fff;text-decoration:none;" onfocus="this.style.top='0'" onblur="this.style.top='-100%'">Skip to main content</a>
+
+  <!-- ── Navigation ──────────────────────────────────────────────────── -->
+  <nav class="nav" aria-label="Main navigation">
+    <span class="nav-brand"><a href="/">RETROGAZE</a></span>
+    <button class="hamburger" id="hamburger-btn" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="nav-links">
+      <a href="/gallery" class="nav-link">GALLERY</a>
+      <a href="/mcp-server" class="nav-link">MCP</a>
+      <a href="/ethics" class="nav-link">ETHICS</a>
+      <a href="/help" class="nav-link">HELP</a>
+      <a href="/changelog" class="nav-link">CHANGELOG</a>
+      <a href="https://github.com/lerugray/retrogaze" class="nav-link" target="_blank" rel="noopener">SOURCE</a>
+      <a href="/app" class="btn btn-outline">OPEN APP</a>
+    </div>
+  </nav>
+
+  <main id="main-content">
+
+  <!-- ── Page Header ─────────────────────────────────────────────────── -->
+  <section class="page-header">
+    <span class="section-label">// MCP SERVER</span>
+    <h1>DRAW SPRITES IN<br />ASEPRITE VIA CLAUDE</h1>
+    <p class="subtitle">
+      Bring your own Claude model. Retrogaze provides the hardware constraint
+      intelligence. Every pixel placed deliberately, validated against real
+      console specs.
+    </p>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ── How It Works ────────────────────────────────────────────────── -->
+  <div class="section">
+    <span class="section-label">// HOW IT WORKS</span>
+    <h2>YOUR CLAUDE. OUR CONSTRAINTS.</h2>
+
+    <p>
+      Retrogaze's MCP server is a set of tools that Claude calls for classic
+      console expertise. You tell Claude what to draw. Claude asks Retrogaze
+      for the right palette, proportions, and drawing rules for your target
+      console. Then Claude draws it in Aseprite using
+      <a href="https://github.com/willibrandon/pixel-plugin">pixel-mcp</a>.
+      The result is a native <strong>.aseprite file</strong> with editable
+      layers, correct palettes, and hardware-validated constraints.
+    </p>
+
+    <ol class="steps">
+      <li>
+        <span><strong>Ask Claude to draw a sprite.</strong>
+        "Draw a 16x16 mid-era NES knight with a sword."</span>
+      </li>
+      <li>
+        <span><strong>Claude calls Retrogaze for console expertise.</strong>
+        Gets the right palette and drawing rules for your target console.</span>
+      </li>
+      <li>
+        <span><strong>Claude draws it in Aseprite via pixel-mcp.</strong>
+        Every pixel placed deliberately, validated against real hardware specs.</span>
+      </li>
+      <li>
+        <span><strong>Result:</strong> a hardware-authentic sprite in native
+        .aseprite format, ready to edit or export.</span>
+      </li>
+    </ol>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── Supported Consoles ──────────────────────────────────────────── -->
+  <div class="section">
+    <span class="section-label">// CONSOLE SELECT</span>
+    <h2>REAL HARDWARE CONSTRAINTS</h2>
+
+    <p>
+      Each console has its own palette, tile rules, and sprite limits.
+      Retrogaze enforces the actual hardware specs, not approximations.
+    </p>
+
+    <table class="console-table">
+      <thead>
+        <tr>
+          <th>CONSOLE</th>
+          <th>STATUS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>NES</strong></td>
+          <td><strong style="color:var(--color-success);">Live</strong></td>
+        </tr>
+        <tr>
+          <td><strong>SNES</strong></td>
+          <td><strong style="color:var(--color-success);">Live</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Genesis / Mega Drive</strong></td>
+          <td><strong style="color:var(--color-success);">Live</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Game Boy</strong></td>
+          <td><strong style="color:var(--color-success);">Live</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Game Boy Pocket</strong></td>
+          <td><strong style="color:var(--color-warning);">Beta</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Game Boy Color</strong></td>
+          <td><strong style="color:var(--color-success);">Live</strong></td>
+        </tr>
+        <tr>
+          <td><strong>C64</strong></td>
+          <td><strong style="color:var(--color-success);">Live</strong></td>
+        </tr>
+        <tr>
+          <td><strong>PC Engine / TurboGrafx-16</strong></td>
+          <td><strong style="color:var(--color-success);">Live</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── Available Tools ─────────────────────────────────────────────── -->
+  <div class="surface-bg">
+    <div class="section">
+      <span class="section-label">// TOOL SELECT</span>
+      <h2>6 MCP TOOLS</h2>
+
+      <div class="tool-grid">
+        <div class="tool-card">
+          <p class="tool-name">RETRO_GENERATE_PROMPT</p>
+          <p class="tool-desc">Get console-optimized drawing instructions and palette for your target console and era.</p>
+        </div>
+        <div class="tool-card">
+          <p class="tool-name">RETRO_VALIDATE_SPRITE</p>
+          <p class="tool-desc">Check if a sprite meets real hardware constraints. Get a pass/fail compliance report.</p>
+        </div>
+        <div class="tool-card">
+          <p class="tool-name">RETRO_FIX_SPRITE</p>
+          <p class="tool-desc">Auto-fix constraint violations so your sprite is hardware-compliant.</p>
+        </div>
+        <div class="tool-card">
+          <p class="tool-name">RETRO_SUGGEST_PALETTE</p>
+          <p class="tool-desc">Get palette colors for a mood or theme from the console's authentic hardware palette.</p>
+        </div>
+        <div class="tool-card">
+          <p class="tool-name">RETRO_LIST_PRESETS</p>
+          <p class="tool-desc">Browse named palette presets inspired by classic games.</p>
+        </div>
+        <div class="tool-card">
+          <p class="tool-name">RETRO_CHECK_STATUS</p>
+          <p class="tool-desc">Check API status.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── Installation ────────────────────────────────────────────────── -->
+  <div class="section">
+    <span class="section-label">// INSTALL</span>
+    <h2>COPY. PASTE. DRAW.</h2>
+
+    <p>
+      Retrogaze's MCP server runs from source. Clone the repo, then run
+      <code>cd mcp-server &amp;&amp; npm install &amp;&amp; npm run build</code>
+      and use the path to <code>dist/index.js</code> in your MCP config. Point
+      <code>RETROGAZE_API_URL</code> at your local or self-hosted Retrogaze API
+      (default <code>http://localhost:8000</code>). No key or paid unlock required.
+    </p>
+
+    <span class="config-label">CLAUDE DESKTOP</span>
+    <div class="config-block">
+<pre>{
+  "mcpServers": {
+    "retrogaze": {
+      "command": "node",
+      "args": ["/path/to/retrogaze/mcp-server/dist/index.js"],
+      "env": {
+        "RETROGAZE_API_URL": "http://localhost:8000"
+      }
+    }
+  }
+}</pre>
+    </div>
+
+    <span class="config-label">CLAUDE CODE (.mcp.json)</span>
+    <div class="config-block">
+<pre>{
+  "mcpServers": {
+    "retrogaze": {
+      "command": "node",
+      "args": ["/path/to/retrogaze/mcp-server/dist/index.js"],
+      "env": {
+        "RETROGAZE_API_URL": "http://localhost:8000"
+      }
+    }
+  }
+}</pre>
+    </div>
+
+    <span class="config-label">CURSOR (Settings &gt; MCP Servers)</span>
+    <div class="config-block">
+<pre>{
+  "retrogaze": {
+    "command": "node",
+    "args": ["/path/to/retrogaze/mcp-server/dist/index.js"],
+    "env": {
+      "RETROGAZE_API_URL": "http://localhost:8000"
+    }
+  }
+}</pre>
+    </div>
+
+    <p>
+      You'll also need <a href="https://www.aseprite.org/">Aseprite</a>
+      and <a href="https://github.com/willibrandon/pixel-plugin">pixel-mcp</a>
+      installed for the drawing tools. Retrogaze provides the constraint
+      intelligence; pixel-mcp provides the Aseprite brushes.
+    </p>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ── What You Choose ─────────────────────────────────────────────── -->
+  <div class="section">
+    <span class="section-label">// YOUR MODEL, YOUR COST</span>
+    <h2>BRING YOUR OWN MODEL</h2>
+
+    <p>
+      You use your own API key. Retrogaze doesn't make AI calls on your
+      behalf: your model makes the creative decisions, and Retrogaze
+      provides the console expertise. You control the model and the cost.
+    </p>
+    <p>
+      <strong>Claude is tested and recommended.</strong>
+      <strong>Sonnet</strong> is the practical choice:
+      it clears the quality bar on all eras at ~5x less cost than Opus.
+      <strong>Opus</strong> gives a half-grade quality premium.
+      <strong>Haiku</strong> works for retro and early eras.
+    </p>
+    <p>
+      The MCP server is free and open source.
+      All consoles and eras are available in the open-source build.
+    </p>
+
+    <h2 style="margin-top:3rem;">OTHER MODELS</h2>
+
+    <p>
+      The tools are model-agnostic by design: any LLM with MCP
+      tool-use support can call them. GPT, Gemini, local models. The
+      constraint intelligence comes from Retrogaze, not from the model.
+    </p>
+    <p>
+      We're looking for users willing to test non-Claude models and report
+      quality results. If you want to help us expand model support,
+      open an issue on GitHub with your results.</p>
+    <p>
+      Interested? Open an issue and mention
+      "multi-model testing" when you reach out.
+    </p>
+  </div>
+
+  </main>
+
+  <!-- ── Footer ────────────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <p class="footer-brand">RETROGAZE</p>
+    <p class="footer-tagline">
+      Built by a game designer,<br />not venture capital.
+    </p>
+    <p class="footer-meta">
+      &copy; 2026 Retrogaze &nbsp;|&nbsp;
+      <a href="/">Home</a> &nbsp;|&nbsp;
+      <a href="/gallery">Gallery</a> &nbsp;|&nbsp;
+      <a href="/ethics">Ethics</a> &nbsp;|&nbsp;
+      <a href="/help">Help</a> &nbsp;|&nbsp;
+      <a href="/terms">Terms</a> &nbsp;|&nbsp;
+      <a href="/privacy">Privacy</a> &nbsp;|&nbsp;
+      <a href="/app">Open App</a> &nbsp;|&nbsp;
+      <a href="https://github.com/lerugray/retrogaze" target="_blank" rel="noopener">Source</a> &nbsp;|&nbsp;
+      <a href="https://usedevforge.com/" target="_blank" rel="noopener">Devforge</a>
+    </p>
+  </footer>
+
+<script>
+// Hamburger menu toggle
+(function() {
+  var btn = document.getElementById('hamburger-btn');
+  var menu = document.getElementById('nav-links');
+  if (btn && menu) {
+    btn.addEventListener('click', function() {
+      var open = menu.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+})();
+</script>
+</body>
+</html>

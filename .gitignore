@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.pytest_cache/
+venv/
+.venv/
+
+# Node
+node_modules/
+mcp-server/dist/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets / env
+.env
+.env.local
+*.key
+
+# Generated
+output/
+*.generated.png
+frontend/app.min.js
+src/test_output/
+test-outputs/

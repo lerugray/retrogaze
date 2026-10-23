@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r src/requirements.txt
+          pip install pytest pytest-asyncio
+      - name: Run tests
+        env:
+          RETROGAZE_MOCK: 1
+        run: |
+          cd src
+          python -m pytest tests/ -v
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    env:
+      RETROGAZE_TEST_EMAIL: ${{ secrets.RETROGAZE_TEST_EMAIL }}
+      RETROGAZE_TEST_PASSWORD: ${{ secrets.RETROGAZE_TEST_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      # The live-site smoke needs a dedicated test account. Until those repo
+      # secrets exist, skip cleanly instead of failing every push.
+      - name: Check e2e credentials
+        id: creds
+        run: |
+          if [ -n "$RETROGAZE_TEST_EMAIL" ] && [ -n "$RETROGAZE_TEST_PASSWORD" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::e2e smoke skipped - RETROGAZE_TEST_EMAIL/RETROGAZE_TEST_PASSWORD secrets not configured"
+          fi
+      - name: Set up Node.js
+        if: steps.creds.outputs.present == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install e2e dependencies
+        if: steps.creds.outputs.present == 'true'
+        run: |
+          cd tests/e2e
+          npm install
+      - name: Install Playwright browsers
+        if: steps.creds.outputs.present == 'true'
+        run: |
+          cd tests/e2e
+          npm run install-browsers
+      - name: Run e2e smoke tests
+        if: steps.creds.outputs.present == 'true'
+        run: |
+          cd tests/e2e
+          npm run smoke
+
+  golden-set-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r src/requirements.txt
+      - name: Run golden-set quality regression gate
+        run: |
+          python scripts/experiments/golden_set_gate.py --json-output golden-set-results.json
+      - name: Upload golden-set results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-set-results
+          path: golden-set-results.json
+          retention-days: 14
+
+  # rg-061. The golden-set gate above is a STABILITY gate: it froze its baseline
+  # on 2026-07-25, three weeks after the 2026-07-05 resolution regression, so it
+  # froze that regression in as "correct" and is structurally incapable of
+  # noticing what broke. This gate enforces an ABSOLUTE floor measured off
+  # golden-era (2026-04-03..05) output, which does not move. Both are wanted.
+  #
+  # Acceptance test for this job: it fails on d680c14's behaviour (16x16 output)
+  # and passes on restored natural-resolution output. Verified both directions.
+  gold-bar-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r src/requirements.txt
+      - name: Run GOLD-BAR absolute quality gate
+        run: |
+          python scripts/experiments/gold_bar_gate.py --json-output gold-bar-results.json
+      - name: Verify the gate itself still catches the d680c14 regression
+        # A gate that cannot catch the regression it was built for is not a gate.
+        # This must exit non-zero; the step fails if it ever starts passing.
+        run: |
+          if python scripts/experiments/gold_bar_gate.py \
+               --skip-policy-check --emulate strict > /dev/null 2>&1; then
+            echo "::error::GOLD-BAR gate PASSED on force-downscaled (16x16) output."
+            echo "The gate has lost its teeth — it can no longer detect the d680c14"
+            echo "resolution regression. Fix the gate before trusting a green build."
+            exit 1
+          fi
+          echo "OK — gate correctly rejects force-downscaled output."
+      - name: Upload gold-bar results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gold-bar-results
+          path: gold-bar-results.json
+          retention-days: 14

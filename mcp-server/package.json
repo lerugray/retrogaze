@@ -1,0 +1,45 @@
+{
+  "name": "@retrogaze/mcp",
+  "version": "1.0.0",
+  "description": "Classic console pixel art intelligence — prompt generation and hardware constraint validation for MCP clients using pixel-mcp",
+  "type": "module",
+  "bin": {
+    "retrogaze-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "mcp",
+    "nes",
+    "retro",
+    "console",
+    "pixel-art",
+    "retrogaze",
+    "sprite",
+    "constraint-validation"
+  ],
+  "author": "Ray Weiss",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lerugray/retrogaze.git",
+    "directory": "mcp-server"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "@types/node": "^22.15.18"
+  },
+  "overrides": {
+    "hono": "^4.12.25"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
