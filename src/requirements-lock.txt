@@ -59,7 +59,7 @@ python-multipart==0.0.32
 PyYAML==6.0.3
 realtime==2.31.0
 referencing==0.37.0
-rpds-py==2026.6.3
+rpds-py==2026.9.1
 scikit-image==0.26.0
 scipy==1.18.0
 sentry-sdk==2.64.0
