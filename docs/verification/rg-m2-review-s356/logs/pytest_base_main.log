@@ -1,0 +1,4 @@
+SKIPPED [1] tests/test_auth_and_user.py:313: SaaS migration tree not present in this checkout
+SKIPPED [4] tests/test_output_resolution.py: Prompt restorations HELD by operator ruling 2026-07-27: the golden prompt text may carry old quirks (e.g. shield-guarantee) — ships only via the rg-066 controlled A/B experiment. These tests are the spec for that landing; unskip then. Restoration diff preserved in bdb7888.
+SKIPPED [1] tests/test_pricing_limits.py:61: SaaS migration tree not present in this checkout
+1621 passed, 6 skipped in 75.37s (0:01:15)

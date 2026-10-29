@@ -1,0 +1,6 @@
+      collision: (98, 98, 98, 255) -> (102, 102, 102)
+      collision: (182, 216, 254, 255) -> (69, 224, 130)
+  rom sha256 870679170e5a9108caf8c284cfbb582b735dafdabf78949af851fb111b7a4496 (rebuild identical); build 0.01 s, mesen 1.12 s [frames=11 width=256 height=240], compare 0.17 s; as expected (negative control: gate (d) must fail)
+Y convention: OAM Y byte $4F -> marker row on screen line(s) ['$50']: confirmed
+8 sprites/line: negative control mismatches 40 px, predicted 40 px of OAM #8 on lines 128-135, x 228-235: Mesen drops the highest OAM index
+SELFTEST PASS

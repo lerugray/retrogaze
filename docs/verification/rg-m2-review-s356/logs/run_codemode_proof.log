@@ -1,0 +1,14 @@
+nes_proof            gate_a=ok gate_b=ok gate_c=ok gate_d=ok rom=aa38c883049f golden=ok deterministic=ok cart=nrom:ok
+nes_proof_tileset    gate_a=ok gate_b=ok gate_c=ok gate_d=ok rom=5667fb61dd15 golden=ok deterministic=ok cart=nrom:ok
+nes_hero             gate_a=ok gate_b=ok gate_c=ok gate_d=ok rom=6da2ad721fad golden=ok deterministic=ok cart=nrom:ok
+nes_9_on_a_line      gate_a=ok gate_b=ok gate_c=ok gate_d=ok rom=49d535a6c785 golden=ok deterministic=ok cart=nrom:ok
+nes_mmc1_chr_ram     gate_a=ok gate_b=ok gate_c=ok gate_d=ok rom=b29e1b77d48d golden=ok deterministic=ok cart=mmc1:ok
+nes_flips_8x8        gate_a=ok gate_b=ok gate_c=ok gate_d=ok rom=5c1ca9b5bddd golden=ok deterministic=ok cart=nrom:ok
+nes_flips_8x16       gate_a=ok gate_b=ok gate_c=ok gate_d=ok rom=7a76204ea7d3 golden=ok deterministic=ok cart=nrom:ok
+snes_proof           gate_a=ok gate_b=ok gate_c=ok gate_d=ok rom=8bcd3312acc7 golden=ok deterministic=ok cart=lorom:ok
+snes_proof_tileset   gate_a=ok gate_b=ok gate_c=ok gate_d=ok rom=8c52807db636 golden=ok deterministic=ok cart=lorom:ok
+snes_layers          gate_a=ok gate_b=ok gate_c=ok gate_d=ok rom=7622c3e7893c golden=ok deterministic=ok cart=lorom:ok
+snes_34_slivers      gate_a=ok gate_b=ok gate_c=ok gate_d=ok rom=345d7bc5f3fc golden=ok deterministic=ok cart=lorom:ok control:fetch_hidden=ok
+snes_33_on_a_line    gate_a=ok gate_b=ok gate_c=ok gate_d=ok rom=005efa05c1c9 golden=ok deterministic=ok cart=lorom:ok control:no_range_limit=ok
+snes_35_slivers      gate_a=ok gate_b=ok gate_c=ok gate_d=ok rom=63d567139a71 golden=ok deterministic=ok cart=lorom:ok control:no_time_limit=ok control:fetch_hidden=ok
+PASS

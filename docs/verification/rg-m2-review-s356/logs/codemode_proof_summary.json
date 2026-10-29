@@ -1,0 +1,3309 @@
+{
+  "ok": true,
+  "scenes": [
+    {
+      "id": "nes_proof",
+      "scene": "proof",
+      "art": "examples/codemode/nes_proof.px.js",
+      "gate_a": true,
+      "validator_errors": [],
+      "gate_b": true,
+      "rom_sha256": "aa38c883049f278a97dc378d3d05a8d48c2c3dde055e2904ba0571c87fbd8b83",
+      "rom_deterministic": true,
+      "rom_golden": true,
+      "cart": "nrom",
+      "header": {
+        "prg_16k": 1,
+        "chr_8k": 1,
+        "mapper": 0,
+        "chr_ram": 0
+      },
+      "cart_ok": true,
+      "gate_c": true,
+      "gate_d": true,
+      "compare": {
+        "gate_c": {
+          "ok": true,
+          "files": {
+            ".pal": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".oam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".nam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".chr": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            }
+          }
+        },
+        "gate_d": {
+          "ok": true,
+          "expected_colors": 16,
+          "screen_colors": 16,
+          "color_map": [
+            [
+              [
+                0,
+                0,
+                0,
+                255
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            [
+              [
+                0,
+                44,
+                136,
+                255
+              ],
+              [
+                0,
+                42,
+                136
+              ]
+            ],
+            [
+              [
+                0,
+                122,
+                0,
+                255
+              ],
+              [
+                12,
+                147,
+                0
+              ]
+            ],
+            [
+              [
+                13,
+                86,
+                208,
+                255
+              ],
+              [
+                21,
+                95,
+                217
+              ]
+            ],
+            [
+              [
+                66,
+                32,
+                208,
+                255
+              ],
+              [
+                66,
+                64,
+                255
+              ]
+            ],
+            [
+              [
+                70,
+                228,
+                56,
+                255
+              ],
+              [
+                92,
+                228,
+                48
+              ]
+            ],
+            [
+              [
+                76,
+                160,
+                254,
+                255
+              ],
+              [
+                100,
+                176,
+                255
+              ]
+            ],
+            [
+              [
+                79,
+                8,
+                0,
+                255
+              ],
+              [
+                108,
+                6,
+                0
+              ]
+            ],
+            [
+              [
+                98,
+                98,
+                98,
+                255
+              ],
+              [
+                102,
+                102,
+                102
+              ]
+            ],
+            [
+              [
+                122,
+                84,
+                0,
+                255
+              ],
+              [
+                153,
+                78,
+                0
+              ]
+            ],
+            [
+              [
+                145,
+                56,
+                0,
+                255
+              ],
+              [
+                181,
+                49,
+                32
+              ]
+            ],
+            [
+              [
+                171,
+                171,
+                171,
+                255
+              ],
+              [
+                173,
+                173,
+                173
+              ]
+            ],
+            [
+              [
+                182,
+                216,
+                254,
+                255
+              ],
+              [
+                192,
+                223,
+                255
+              ]
+            ],
+            [
+              [
+                200,
+                178,
+                22,
+                255
+              ],
+              [
+                234,
+                158,
+                34
+              ]
+            ],
+            [
+              [
+                240,
+                206,
+                178,
+                255
+              ],
+              [
+                254,
+                204,
+                197
+              ]
+            ],
+            [
+              [
+                255,
+                255,
+                255,
+                255
+              ],
+              [
+                255,
+                254,
+                255
+              ]
+            ]
+          ],
+          "mismatched_pixels": 0,
+          "collisions": [],
+          "first": []
+        }
+      },
+      "ok": true
+    },
+    {
+      "id": "nes_proof_tileset",
+      "scene": "level",
+      "art": "examples/codemode/nes_proof.px.js",
+      "gate_a": true,
+      "validator_errors": [],
+      "gate_b": true,
+      "rom_sha256": "5667fb61dd155cf7465a0be5c6eceeeb1e88ec8704975ff84ba8fbf10e0e319a",
+      "rom_deterministic": true,
+      "rom_golden": true,
+      "cart": "nrom",
+      "header": {
+        "prg_16k": 1,
+        "chr_8k": 1,
+        "mapper": 0,
+        "chr_ram": 0
+      },
+      "cart_ok": true,
+      "gate_c": true,
+      "gate_d": true,
+      "compare": {
+        "gate_c": {
+          "ok": true,
+          "files": {
+            ".pal": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".oam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".nam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".chr": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            }
+          }
+        },
+        "gate_d": {
+          "ok": true,
+          "expected_colors": 13,
+          "screen_colors": 13,
+          "color_map": [
+            [
+              [
+                0,
+                44,
+                136,
+                255
+              ],
+              [
+                0,
+                42,
+                136
+              ]
+            ],
+            [
+              [
+                0,
+                122,
+                0,
+                255
+              ],
+              [
+                12,
+                147,
+                0
+              ]
+            ],
+            [
+              [
+                13,
+                86,
+                208,
+                255
+              ],
+              [
+                21,
+                95,
+                217
+              ]
+            ],
+            [
+              [
+                70,
+                228,
+                56,
+                255
+              ],
+              [
+                92,
+                228,
+                48
+              ]
+            ],
+            [
+              [
+                76,
+                160,
+                254,
+                255
+              ],
+              [
+                100,
+                176,
+                255
+              ]
+            ],
+            [
+              [
+                79,
+                8,
+                0,
+                255
+              ],
+              [
+                108,
+                6,
+                0
+              ]
+            ],
+            [
+              [
+                98,
+                98,
+                98,
+                255
+              ],
+              [
+                102,
+                102,
+                102
+              ]
+            ],
+            [
+              [
+                122,
+                84,
+                0,
+                255
+              ],
+              [
+                153,
+                78,
+                0
+              ]
+            ],
+            [
+              [
+                145,
+                56,
+                0,
+                255
+              ],
+              [
+                181,
+                49,
+                32
+              ]
+            ],
+            [
+              [
+                171,
+                171,
+                171,
+                255
+              ],
+              [
+                173,
+                173,
+                173
+              ]
+            ],
+            [
+              [
+                182,
+                216,
+                254,
+                255
+              ],
+              [
+                192,
+                223,
+                255
+              ]
+            ],
+            [
+              [
+                240,
+                206,
+                178,
+                255
+              ],
+              [
+                254,
+                204,
+                197
+              ]
+            ],
+            [
+              [
+                255,
+                255,
+                255,
+                255
+              ],
+              [
+                255,
+                254,
+                255
+              ]
+            ]
+          ],
+          "mismatched_pixels": 0,
+          "collisions": [],
+          "first": []
+        }
+      },
+      "ok": true
+    },
+    {
+      "id": "nes_hero",
+      "scene": "title",
+      "art": "examples/codemode/nes_hero.px.js",
+      "gate_a": true,
+      "validator_errors": [],
+      "gate_b": true,
+      "rom_sha256": "6da2ad721fadab598c7383635e5d6749cd9b1f9f0fa43571b9c1cb1d64a758d4",
+      "rom_deterministic": true,
+      "rom_golden": true,
+      "cart": "nrom",
+      "header": {
+        "prg_16k": 1,
+        "chr_8k": 1,
+        "mapper": 0,
+        "chr_ram": 0
+      },
+      "cart_ok": true,
+      "gate_c": true,
+      "gate_d": true,
+      "compare": {
+        "gate_c": {
+          "ok": true,
+          "files": {
+            ".pal": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".oam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".nam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".chr": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            }
+          }
+        },
+        "gate_d": {
+          "ok": true,
+          "expected_colors": 6,
+          "screen_colors": 6,
+          "color_map": [
+            [
+              [
+                0,
+                0,
+                0,
+                255
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            [
+              [
+                0,
+                122,
+                0,
+                255
+              ],
+              [
+                12,
+                147,
+                0
+              ]
+            ],
+            [
+              [
+                66,
+                32,
+                208,
+                255
+              ],
+              [
+                66,
+                64,
+                255
+              ]
+            ],
+            [
+              [
+                76,
+                160,
+                254,
+                255
+              ],
+              [
+                100,
+                176,
+                255
+              ]
+            ],
+            [
+              [
+                145,
+                56,
+                0,
+                255
+              ],
+              [
+                181,
+                49,
+                32
+              ]
+            ],
+            [
+              [
+                200,
+                178,
+                22,
+                255
+              ],
+              [
+                234,
+                158,
+                34
+              ]
+            ]
+          ],
+          "mismatched_pixels": 0,
+          "collisions": [],
+          "first": []
+        }
+      },
+      "ok": true
+    },
+    {
+      "id": "nes_9_on_a_line",
+      "scene": "line",
+      "art": "src/tests/fixtures/codemode/nes/nes_H9_fail.px.js",
+      "gate_a": true,
+      "validator_errors": [
+        "NES-H9"
+      ],
+      "gate_b": true,
+      "predicted_drop_pixels": 64,
+      "reference_vs_art_diff_pixels": 64,
+      "rom_sha256": "49d535a6c785a2bc9bb801982e7dbf3ab13573f460469c544c201d3d705e0632",
+      "rom_deterministic": true,
+      "rom_golden": true,
+      "cart": "nrom",
+      "header": {
+        "prg_16k": 1,
+        "chr_8k": 1,
+        "mapper": 0,
+        "chr_ram": 0
+      },
+      "cart_ok": true,
+      "gate_c": true,
+      "gate_d": true,
+      "compare": {
+        "gate_c": {
+          "ok": true,
+          "files": {
+            ".pal": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".oam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".nam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".chr": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            }
+          }
+        },
+        "gate_d": {
+          "ok": true,
+          "expected_colors": 2,
+          "screen_colors": 2,
+          "color_map": [
+            [
+              [
+                0,
+                0,
+                0,
+                255
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            [
+              [
+                0,
+                44,
+                136,
+                255
+              ],
+              [
+                0,
+                42,
+                136
+              ]
+            ]
+          ],
+          "mismatched_pixels": 0,
+          "collisions": [],
+          "first": []
+        }
+      },
+      "ok": true
+    },
+    {
+      "id": "nes_mmc1_chr_ram",
+      "scene": "room",
+      "art": "examples/codemode/nes_mmc1.px.js",
+      "gate_a": true,
+      "validator_errors": [],
+      "gate_b": true,
+      "rom_sha256": "b29e1b77d48d95088520ea77784068ff2d52b4a0b23c46ab5a6044187997dad7",
+      "rom_deterministic": true,
+      "rom_golden": true,
+      "cart": "mmc1",
+      "header": {
+        "prg_16k": 8,
+        "chr_8k": 0,
+        "mapper": 1,
+        "chr_ram": 8192
+      },
+      "cart_ok": true,
+      "gate_c": true,
+      "gate_d": true,
+      "compare": {
+        "gate_c": {
+          "ok": true,
+          "files": {
+            ".pal": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".oam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".nam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".chr": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            }
+          }
+        },
+        "gate_d": {
+          "ok": true,
+          "expected_colors": 17,
+          "screen_colors": 17,
+          "color_map": [
+            [
+              [
+                0,
+                0,
+                0,
+                255
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            [
+              [
+                0,
+                44,
+                136,
+                255
+              ],
+              [
+                0,
+                42,
+                136
+              ]
+            ],
+            [
+              [
+                0,
+                122,
+                0,
+                255
+              ],
+              [
+                12,
+                147,
+                0
+              ]
+            ],
+            [
+              [
+                13,
+                86,
+                208,
+                255
+              ],
+              [
+                21,
+                95,
+                217
+              ]
+            ],
+            [
+              [
+                53,
+                16,
+                0,
+                255
+              ],
+              [
+                86,
+                29,
+                0
+              ]
+            ],
+            [
+              [
+                70,
+                228,
+                56,
+                255
+              ],
+              [
+                92,
+                228,
+                48
+              ]
+            ],
+            [
+              [
+                76,
+                160,
+                254,
+                255
+              ],
+              [
+                100,
+                176,
+                255
+              ]
+            ],
+            [
+              [
+                78,
+                78,
+                78,
+                255
+              ],
+              [
+                79,
+                79,
+                79
+              ]
+            ],
+            [
+              [
+                79,
+                8,
+                0,
+                255
+              ],
+              [
+                108,
+                6,
+                0
+              ]
+            ],
+            [
+              [
+                98,
+                98,
+                98,
+                255
+              ],
+              [
+                102,
+                102,
+                102
+              ]
+            ],
+            [
+              [
+                122,
+                84,
+                0,
+                255
+              ],
+              [
+                153,
+                78,
+                0
+              ]
+            ],
+            [
+              [
+                145,
+                56,
+                0,
+                255
+              ],
+              [
+                181,
+                49,
+                32
+              ]
+            ],
+            [
+              [
+                160,
+                204,
+                0,
+                255
+              ],
+              [
+                188,
+                190,
+                0
+              ]
+            ],
+            [
+              [
+                171,
+                171,
+                171,
+                255
+              ],
+              [
+                173,
+                173,
+                173
+              ]
+            ],
+            [
+              [
+                200,
+                178,
+                22,
+                255
+              ],
+              [
+                234,
+                158,
+                34
+              ]
+            ],
+            [
+              [
+                240,
+                206,
+                178,
+                255
+              ],
+              [
+                254,
+                204,
+                197
+              ]
+            ],
+            [
+              [
+                255,
+                255,
+                255,
+                255
+              ],
+              [
+                255,
+                254,
+                255
+              ]
+            ]
+          ],
+          "mismatched_pixels": 0,
+          "collisions": [],
+          "first": []
+        }
+      },
+      "ok": true
+    },
+    {
+      "id": "nes_flips_8x8",
+      "scene": "flips8",
+      "art": "examples/codemode/nes_flips.px.js",
+      "gate_a": true,
+      "validator_errors": [],
+      "gate_b": true,
+      "rom_sha256": "5c1ca9b5bdddc0abd832170cb1303b1952b85563adf502b9b09281e273955002",
+      "rom_deterministic": true,
+      "rom_golden": true,
+      "cart": "nrom",
+      "header": {
+        "prg_16k": 1,
+        "chr_8k": 1,
+        "mapper": 0,
+        "chr_ram": 0
+      },
+      "cart_ok": true,
+      "flip_bits": [
+        0,
+        64,
+        128,
+        192
+      ],
+      "gate_c": true,
+      "gate_d": true,
+      "compare": {
+        "gate_c": {
+          "ok": true,
+          "files": {
+            ".pal": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".oam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".nam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".chr": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            }
+          }
+        },
+        "gate_d": {
+          "ok": true,
+          "expected_colors": 9,
+          "screen_colors": 9,
+          "color_map": [
+            [
+              [
+                0,
+                0,
+                0,
+                255
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            [
+              [
+                0,
+                50,
+                0,
+                255
+              ],
+              [
+                0,
+                82,
+                0
+              ]
+            ],
+            [
+              [
+                0,
+                122,
+                0,
+                255
+              ],
+              [
+                12,
+                147,
+                0
+              ]
+            ],
+            [
+              [
+                53,
+                16,
+                0,
+                255
+              ],
+              [
+                86,
+                29,
+                0
+              ]
+            ],
+            [
+              [
+                76,
+                160,
+                254,
+                255
+              ],
+              [
+                100,
+                176,
+                255
+              ]
+            ],
+            [
+              [
+                122,
+                84,
+                0,
+                255
+              ],
+              [
+                153,
+                78,
+                0
+              ]
+            ],
+            [
+              [
+                160,
+                204,
+                0,
+                255
+              ],
+              [
+                188,
+                190,
+                0
+              ]
+            ],
+            [
+              [
+                171,
+                171,
+                171,
+                255
+              ],
+              [
+                173,
+                173,
+                173
+              ]
+            ],
+            [
+              [
+                255,
+                255,
+                255,
+                255
+              ],
+              [
+                255,
+                254,
+                255
+              ]
+            ]
+          ],
+          "mismatched_pixels": 0,
+          "collisions": [],
+          "first": []
+        }
+      },
+      "ok": true
+    },
+    {
+      "id": "nes_flips_8x16",
+      "scene": "flips16",
+      "art": "examples/codemode/nes_flips.px.js",
+      "gate_a": true,
+      "validator_errors": [],
+      "gate_b": true,
+      "rom_sha256": "7a76204ea7d365ac74c9b3fa28b36c7d311c44c21298804db3535fcf07195d67",
+      "rom_deterministic": true,
+      "rom_golden": true,
+      "cart": "nrom",
+      "header": {
+        "prg_16k": 1,
+        "chr_8k": 1,
+        "mapper": 0,
+        "chr_ram": 0
+      },
+      "cart_ok": true,
+      "flip_bits": [
+        0,
+        64,
+        128,
+        192
+      ],
+      "gate_c": true,
+      "gate_d": true,
+      "compare": {
+        "gate_c": {
+          "ok": true,
+          "files": {
+            ".pal": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".oam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".nam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".chr": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            }
+          }
+        },
+        "gate_d": {
+          "ok": true,
+          "expected_colors": 9,
+          "screen_colors": 9,
+          "color_map": [
+            [
+              [
+                0,
+                0,
+                0,
+                255
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            [
+              [
+                0,
+                50,
+                0,
+                255
+              ],
+              [
+                0,
+                82,
+                0
+              ]
+            ],
+            [
+              [
+                0,
+                122,
+                0,
+                255
+              ],
+              [
+                12,
+                147,
+                0
+              ]
+            ],
+            [
+              [
+                53,
+                16,
+                0,
+                255
+              ],
+              [
+                86,
+                29,
+                0
+              ]
+            ],
+            [
+              [
+                62,
+                196,
+                210,
+                255
+              ],
+              [
+                72,
+                205,
+                222
+              ]
+            ],
+            [
+              [
+                66,
+                32,
+                208,
+                255
+              ],
+              [
+                66,
+                64,
+                255
+              ]
+            ],
+            [
+              [
+                76,
+                160,
+                254,
+                255
+              ],
+              [
+                100,
+                176,
+                255
+              ]
+            ],
+            [
+              [
+                171,
+                171,
+                171,
+                255
+              ],
+              [
+                173,
+                173,
+                173
+              ]
+            ],
+            [
+              [
+                255,
+                255,
+                255,
+                255
+              ],
+              [
+                255,
+                254,
+                255
+              ]
+            ]
+          ],
+          "mismatched_pixels": 0,
+          "collisions": [],
+          "first": []
+        }
+      },
+      "ok": true
+    },
+    {
+      "id": "snes_proof",
+      "console": "snes",
+      "scene": "proof",
+      "art": "examples/codemode/snes/snes_proof.px.js",
+      "gate_a": true,
+      "validator_errors": [],
+      "gate_b": true,
+      "rom_sha256": "8bcd3312acc736f83bb371ef0c373bfcc678081c23a2dd053231a6e6073b90b4",
+      "rom_deterministic": true,
+      "rom_golden": true,
+      "cart": "lorom",
+      "header": {
+        "map_mode": 32,
+        "rom_size_kib": 128,
+        "bytes": 131072,
+        "checksum_ok": true
+      },
+      "cart_ok": true,
+      "oracle": {
+        "ok": true,
+        "tiles": 72,
+        "checked": 72,
+        "mismatched_tiles": [],
+        "unchecked_tiles": [],
+        "palettes": [
+          0,
+          1,
+          2
+        ]
+      },
+      "gate_c": true,
+      "gate_d": true,
+      "compare": {
+        "gate_c": {
+          "ok": true,
+          "files": {
+            ".cgram": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".oam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            "vram": {
+              "ok": true,
+              "mismatches": 0,
+              "regions": {
+                "bg1_chr": [
+                  8192,
+                  2304
+                ],
+                "bg1_map": [
+                  12288,
+                  2048
+                ],
+                "obj": [
+                  0,
+                  8192
+                ]
+              },
+              "mismatches_by_region": {},
+              "first": []
+            }
+          }
+        },
+        "gate_d": {
+          "ok": true,
+          "expected_colors": 46,
+          "screen_colors": 46,
+          "color_map": [
+            [
+              [
+                16,
+                16,
+                41,
+                255
+              ],
+              [
+                16,
+                16,
+                41
+              ]
+            ],
+            [
+              [
+                16,
+                32,
+                24,
+                255
+              ],
+              [
+                16,
+                33,
+                24
+              ]
+            ],
+            [
+              [
+                16,
+                65,
+                131,
+                255
+              ],
+              [
+                16,
+                66,
+                132
+              ]
+            ],
+            [
+              [
+                24,
+                90,
+                49,
+                255
+              ],
+              [
+                24,
+                90,
+                49
+              ]
+            ],
+            [
+              [
+                32,
+                32,
+                65,
+                255
+              ],
+              [
+                33,
+                33,
+                66
+              ]
+            ],
+            [
+              [
+                32,
+                106,
+                180,
+                255
+              ],
+              [
+                33,
+                107,
+                181
+              ]
+            ],
+            [
+              [
+                32,
+                131,
+                49,
+                255
+              ],
+              [
+                33,
+                132,
+                49
+              ]
+            ],
+            [
+              [
+                41,
+                41,
+                65,
+                255
+              ],
+              [
+                41,
+                41,
+                66
+              ]
+            ],
+            [
+              [
+                41,
+                74,
+                172,
+                255
+              ],
+              [
+                41,
+                74,
+                173
+              ]
+            ],
+            [
+              [
+                49,
+                131,
+                57,
+                255
+              ],
+              [
+                49,
+                132,
+                57
+              ]
+            ],
+            [
+              [
+                57,
+                106,
+                197,
+                255
+              ],
+              [
+                57,
+                107,
+                198
+              ]
+            ],
+            [
+              [
+                65,
+                82,
+                115,
+                255
+              ],
+              [
+                66,
+                82,
+                115
+              ]
+            ],
+            [
+              [
+                74,
+                197,
+                74,
+                255
+              ],
+              [
+                74,
+                198,
+                74
+              ]
+            ],
+            [
+              [
+                82,
+                49,
+                24,
+                255
+              ],
+              [
+                82,
+                49,
+                24
+              ]
+            ],
+            [
+              [
+                82,
+                82,
+                106,
+                255
+              ],
+              [
+                82,
+                82,
+                107
+              ]
+            ],
+            [
+              [
+                82,
+                139,
+                222,
+                255
+              ],
+              [
+                82,
+                140,
+                222
+              ]
+            ],
+            [
+              [
+                82,
+                164,
+                230,
+                255
+              ],
+              [
+                82,
+                165,
+                231
+              ]
+            ],
+            [
+              [
+                82,
+                172,
+                65,
+                255
+              ],
+              [
+                82,
+                173,
+                66
+              ]
+            ],
+            [
+              [
+                90,
+                65,
+                148,
+                255
+              ],
+              [
+                90,
+                66,
+                148
+              ]
+            ],
+            [
+              [
+                106,
+                172,
+                238,
+                255
+              ],
+              [
+                107,
+                173,
+                239
+              ]
+            ],
+            [
+              [
+                115,
+                24,
+                24,
+                255
+              ],
+              [
+                115,
+                24,
+                24
+              ]
+            ],
+            [
+              [
+                115,
+                131,
+                172,
+                255
+              ],
+              [
+                115,
+                132,
+                173
+              ]
+            ],
+            [
+              [
+                123,
+                74,
+                32,
+                255
+              ],
+              [
+                123,
+                74,
+                33
+              ]
+            ],
+            [
+              [
+                123,
+                98,
+                180,
+                255
+              ],
+              [
+                123,
+                99,
+                181
+              ]
+            ],
+            [
+              [
+                131,
+                131,
+                156,
+                255
+              ],
+              [
+                132,
+                132,
+                156
+              ]
+            ],
+            [
+              [
+                131,
+                213,
+                82,
+                255
+              ],
+              [
+                132,
+                214,
+                82
+              ]
+            ],
+            [
+              [
+                139,
+                205,
+                246,
+                255
+              ],
+              [
+                140,
+                206,
+                247
+              ]
+            ],
+            [
+              [
+                139,
+                246,
+                115,
+                255
+              ],
+              [
+                140,
+                247,
+                115
+              ]
+            ],
+            [
+              [
+                148,
+                16,
+                32,
+                255
+              ],
+              [
+                148,
+                16,
+                33
+              ]
+            ],
+            [
+              [
+                164,
+                139,
+                213,
+                255
+              ],
+              [
+                165,
+                140,
+                214
+              ]
+            ],
+            [
+              [
+                172,
+                115,
+                57,
+                255
+              ],
+              [
+                173,
+                115,
+                57
+              ]
+            ],
+            [
+              [
+                172,
+                189,
+                222,
+                255
+              ],
+              [
+                173,
+                189,
+                222
+              ]
+            ],
+            [
+              [
+                180,
+                49,
+                32,
+                255
+              ],
+              [
+                181,
+                49,
+                33
+              ]
+            ],
+            [
+              [
+                180,
+                230,
+                255,
+                255
+              ],
+              [
+                181,
+                231,
+                255
+              ]
+            ],
+            [
+              [
+                189,
+                189,
+                205,
+                255
+              ],
+              [
+                189,
+                189,
+                206
+              ]
+            ],
+            [
+              [
+                205,
+                148,
+                16,
+                255
+              ],
+              [
+                206,
+                148,
+                16
+              ]
+            ],
+            [
+              [
+                205,
+                230,
+                255,
+                255
+              ],
+              [
+                206,
+                231,
+                255
+              ]
+            ],
+            [
+              [
+                213,
+                148,
+                106,
+                255
+              ],
+              [
+                214,
+                148,
+                107
+              ]
+            ],
+            [
+              [
+                230,
+                49,
+                49,
+                255
+              ],
+              [
+                231,
+                49,
+                49
+              ]
+            ],
+            [
+              [
+                230,
+                98,
+                49,
+                255
+              ],
+              [
+                231,
+                99,
+                49
+              ]
+            ],
+            [
+              [
+                230,
+                255,
+                197,
+                255
+              ],
+              [
+                231,
+                255,
+                198
+              ]
+            ],
+            [
+              [
+                246,
+                255,
+                255,
+                255
+              ],
+              [
+                247,
+                255,
+                255
+              ]
+            ],
+            [
+              [
+                255,
+                98,
+                164,
+                255
+              ],
+              [
+                255,
+                99,
+                165
+              ]
+            ],
+            [
+              [
+                255,
+                222,
+                65,
+                255
+              ],
+              [
+                255,
+                222,
+                66
+              ]
+            ],
+            [
+              [
+                255,
+                230,
+                82,
+                255
+              ],
+              [
+                255,
+                231,
+                82
+              ]
+            ],
+            [
+              [
+                255,
+                255,
+                255,
+                255
+              ],
+              [
+                255,
+                255,
+                255
+              ]
+            ]
+          ],
+          "mismatched_pixels": 0,
+          "collisions": [],
+          "first": []
+        }
+      },
+      "controls": {},
+      "ok": true
+    },
+    {
+      "id": "snes_proof_tileset",
+      "console": "snes",
+      "scene": "land",
+      "art": "examples/codemode/snes/snes_proof.px.js",
+      "gate_a": true,
+      "validator_errors": [],
+      "gate_b": true,
+      "rom_sha256": "8c52807db636dee15a855a8b35bb71827f600b8648d14602270b5939638ed68b",
+      "rom_deterministic": true,
+      "rom_golden": true,
+      "cart": "lorom",
+      "header": {
+        "map_mode": 32,
+        "rom_size_kib": 128,
+        "bytes": 131072,
+        "checksum_ok": true
+      },
+      "cart_ok": true,
+      "gate_c": true,
+      "gate_d": true,
+      "compare": {
+        "gate_c": {
+          "ok": true,
+          "files": {
+            ".cgram": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".oam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            "vram": {
+              "ok": true,
+              "mismatches": 0,
+              "regions": {
+                "bg1_chr": [
+                  0,
+                  2304
+                ],
+                "bg1_map": [
+                  4096,
+                  2048
+                ]
+              },
+              "mismatches_by_region": {},
+              "first": []
+            }
+          }
+        },
+        "gate_d": {
+          "ok": true,
+          "expected_colors": 30,
+          "screen_colors": 30,
+          "color_map": [
+            [
+              [
+                16,
+                65,
+                131,
+                255
+              ],
+              [
+                16,
+                66,
+                132
+              ]
+            ],
+            [
+              [
+                24,
+                90,
+                49,
+                255
+              ],
+              [
+                24,
+                90,
+                49
+              ]
+            ],
+            [
+              [
+                32,
+                106,
+                180,
+                255
+              ],
+              [
+                33,
+                107,
+                181
+              ]
+            ],
+            [
+              [
+                41,
+                41,
+                65,
+                255
+              ],
+              [
+                41,
+                41,
+                66
+              ]
+            ],
+            [
+              [
+                41,
+                74,
+                172,
+                255
+              ],
+              [
+                41,
+                74,
+                173
+              ]
+            ],
+            [
+              [
+                49,
+                131,
+                57,
+                255
+              ],
+              [
+                49,
+                132,
+                57
+              ]
+            ],
+            [
+              [
+                57,
+                106,
+                197,
+                255
+              ],
+              [
+                57,
+                107,
+                198
+              ]
+            ],
+            [
+              [
+                82,
+                49,
+                24,
+                255
+              ],
+              [
+                82,
+                49,
+                24
+              ]
+            ],
+            [
+              [
+                82,
+                82,
+                106,
+                255
+              ],
+              [
+                82,
+                82,
+                107
+              ]
+            ],
+            [
+              [
+                82,
+                139,
+                222,
+                255
+              ],
+              [
+                82,
+                140,
+                222
+              ]
+            ],
+            [
+              [
+                82,
+                164,
+                230,
+                255
+              ],
+              [
+                82,
+                165,
+                231
+              ]
+            ],
+            [
+              [
+                82,
+                172,
+                65,
+                255
+              ],
+              [
+                82,
+                173,
+                66
+              ]
+            ],
+            [
+              [
+                90,
+                65,
+                148,
+                255
+              ],
+              [
+                90,
+                66,
+                148
+              ]
+            ],
+            [
+              [
+                106,
+                172,
+                238,
+                255
+              ],
+              [
+                107,
+                173,
+                239
+              ]
+            ],
+            [
+              [
+                115,
+                24,
+                24,
+                255
+              ],
+              [
+                115,
+                24,
+                24
+              ]
+            ],
+            [
+              [
+                123,
+                74,
+                32,
+                255
+              ],
+              [
+                123,
+                74,
+                33
+              ]
+            ],
+            [
+              [
+                123,
+                98,
+                180,
+                255
+              ],
+              [
+                123,
+                99,
+                181
+              ]
+            ],
+            [
+              [
+                131,
+                131,
+                156,
+                255
+              ],
+              [
+                132,
+                132,
+                156
+              ]
+            ],
+            [
+              [
+                131,
+                213,
+                82,
+                255
+              ],
+              [
+                132,
+                214,
+                82
+              ]
+            ],
+            [
+              [
+                139,
+                205,
+                246,
+                255
+              ],
+              [
+                140,
+                206,
+                247
+              ]
+            ],
+            [
+              [
+                164,
+                139,
+                213,
+                255
+              ],
+              [
+                165,
+                140,
+                214
+              ]
+            ],
+            [
+              [
+                172,
+                115,
+                57,
+                255
+              ],
+              [
+                173,
+                115,
+                57
+              ]
+            ],
+            [
+              [
+                180,
+                49,
+                32,
+                255
+              ],
+              [
+                181,
+                49,
+                33
+              ]
+            ],
+            [
+              [
+                180,
+                230,
+                255,
+                255
+              ],
+              [
+                181,
+                231,
+                255
+              ]
+            ],
+            [
+              [
+                189,
+                189,
+                205,
+                255
+              ],
+              [
+                189,
+                189,
+                206
+              ]
+            ],
+            [
+              [
+                205,
+                230,
+                255,
+                255
+              ],
+              [
+                206,
+                231,
+                255
+              ]
+            ],
+            [
+              [
+                230,
+                98,
+                49,
+                255
+              ],
+              [
+                231,
+                99,
+                49
+              ]
+            ],
+            [
+              [
+                255,
+                98,
+                164,
+                255
+              ],
+              [
+                255,
+                99,
+                165
+              ]
+            ],
+            [
+              [
+                255,
+                230,
+                82,
+                255
+              ],
+              [
+                255,
+                231,
+                82
+              ]
+            ],
+            [
+              [
+                255,
+                255,
+                255,
+                255
+              ],
+              [
+                255,
+                255,
+                255
+              ]
+            ]
+          ],
+          "mismatched_pixels": 0,
+          "collisions": [],
+          "first": []
+        }
+      },
+      "controls": {},
+      "ok": true
+    },
+    {
+      "id": "snes_layers",
+      "console": "snes",
+      "scene": "layers",
+      "art": "examples/codemode/snes/snes_layers.px.js",
+      "gate_a": true,
+      "validator_errors": [],
+      "gate_b": true,
+      "rom_sha256": "7622c3e7893c1354c91a1cd9251e9b64125e47b2fb11d2512fea5fa1304dfb58",
+      "rom_deterministic": true,
+      "rom_golden": true,
+      "cart": "lorom",
+      "header": {
+        "map_mode": 32,
+        "rom_size_kib": 128,
+        "bytes": 131072,
+        "checksum_ok": true
+      },
+      "cart_ok": true,
+      "gate_c": true,
+      "gate_d": true,
+      "compare": {
+        "gate_c": {
+          "ok": true,
+          "files": {
+            ".cgram": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".oam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            "vram": {
+              "ok": true,
+              "mismatches": 0,
+              "regions": {
+                "bg1_chr": [
+                  8192,
+                  3296
+                ],
+                "bg1_map": [
+                  12288,
+                  2048
+                ],
+                "bg2_chr": [
+                  16384,
+                  3712
+                ],
+                "bg2_map": [
+                  14336,
+                  2048
+                ],
+                "bg3_chr": [
+                  24576,
+                  144
+                ],
+                "bg3_map": [
+                  20480,
+                  2048
+                ],
+                "obj": [
+                  0,
+                  8192
+                ]
+              },
+              "mismatches_by_region": {},
+              "first": []
+            }
+          }
+        },
+        "gate_d": {
+          "ok": true,
+          "expected_colors": 27,
+          "screen_colors": 27,
+          "color_map": [
+            [
+              [
+                16,
+                16,
+                32,
+                255
+              ],
+              [
+                16,
+                16,
+                33
+              ]
+            ],
+            [
+              [
+                24,
+                24,
+                57,
+                255
+              ],
+              [
+                24,
+                24,
+                57
+              ]
+            ],
+            [
+              [
+                32,
+                24,
+                74,
+                255
+              ],
+              [
+                33,
+                24,
+                74
+              ]
+            ],
+            [
+              [
+                32,
+                98,
+                41,
+                255
+              ],
+              [
+                33,
+                99,
+                41
+              ]
+            ],
+            [
+              [
+                49,
+                24,
+                98,
+                255
+              ],
+              [
+                49,
+                24,
+                99
+              ]
+            ],
+            [
+              [
+                49,
+                49,
+                74,
+                255
+              ],
+              [
+                49,
+                49,
+                74
+              ]
+            ],
+            [
+              [
+                65,
+                49,
+                115,
+                255
+              ],
+              [
+                66,
+                49,
+                115
+              ]
+            ],
+            [
+              [
+                65,
+                156,
+                49,
+                255
+              ],
+              [
+                66,
+                156,
+                49
+              ]
+            ],
+            [
+              [
+                74,
+                41,
+                24,
+                255
+              ],
+              [
+                74,
+                41,
+                24
+              ]
+            ],
+            [
+              [
+                98,
+                32,
+                115,
+                255
+              ],
+              [
+                99,
+                33,
+                115
+              ]
+            ],
+            [
+              [
+                98,
+                98,
+                123,
+                255
+              ],
+              [
+                99,
+                99,
+                123
+              ]
+            ],
+            [
+              [
+                106,
+                82,
+                148,
+                255
+              ],
+              [
+                107,
+                82,
+                148
+              ]
+            ],
+            [
+              [
+                123,
+                74,
+                32,
+                255
+              ],
+              [
+                123,
+                74,
+                33
+              ]
+            ],
+            [
+              [
+                123,
+                213,
+                74,
+                255
+              ],
+              [
+                123,
+                214,
+                74
+              ]
+            ],
+            [
+              [
+                156,
+                106,
+                16,
+                255
+              ],
+              [
+                156,
+                107,
+                16
+              ]
+            ],
+            [
+              [
+                156,
+                156,
+                180,
+                255
+              ],
+              [
+                156,
+                156,
+                181
+              ]
+            ],
+            [
+              [
+                164,
+                49,
+                98,
+                255
+              ],
+              [
+                165,
+                49,
+                99
+              ]
+            ],
+            [
+              [
+                180,
+                123,
+                65,
+                255
+              ],
+              [
+                181,
+                123,
+                66
+              ]
+            ],
+            [
+              [
+                197,
+                98,
+                32,
+                255
+              ],
+              [
+                198,
+                99,
+                33
+              ]
+            ],
+            [
+              [
+                222,
+                90,
+                74,
+                255
+              ],
+              [
+                222,
+                90,
+                74
+              ]
+            ],
+            [
+              [
+                238,
+                238,
+                255,
+                255
+              ],
+              [
+                239,
+                239,
+                255
+              ]
+            ],
+            [
+              [
+                246,
+                197,
+                49,
+                255
+              ],
+              [
+                247,
+                198,
+                49
+              ]
+            ],
+            [
+              [
+                255,
+                49,
+                65,
+                255
+              ],
+              [
+                255,
+                49,
+                66
+              ]
+            ],
+            [
+              [
+                255,
+                156,
+                65,
+                255
+              ],
+              [
+                255,
+                156,
+                66
+              ]
+            ],
+            [
+              [
+                255,
+                222,
+                115,
+                255
+              ],
+              [
+                255,
+                222,
+                115
+              ]
+            ],
+            [
+              [
+                255,
+                246,
+                148,
+                255
+              ],
+              [
+                255,
+                247,
+                148
+              ]
+            ],
+            [
+              [
+                255,
+                255,
+                255,
+                255
+              ],
+              [
+                255,
+                255,
+                255
+              ]
+            ]
+          ],
+          "mismatched_pixels": 0,
+          "collisions": [],
+          "first": []
+        }
+      },
+      "controls": {},
+      "ok": true
+    },
+    {
+      "id": "snes_34_slivers",
+      "console": "snes",
+      "scene": "slivers",
+      "art": "src/tests/fixtures/codemode/snes/snes_H11_pass.px.js",
+      "gate_a": true,
+      "validator_errors": [],
+      "gate_b": true,
+      "rom_sha256": "345d7bc5f3fcef349ae10bb51e73ee3db8141eadc51509daaa15205439a898b3",
+      "rom_deterministic": true,
+      "rom_golden": true,
+      "cart": "lorom",
+      "header": {
+        "map_mode": 32,
+        "rom_size_kib": 128,
+        "bytes": 131072,
+        "checksum_ok": true
+      },
+      "cart_ok": true,
+      "gate_c": true,
+      "gate_d": true,
+      "compare": {
+        "gate_c": {
+          "ok": true,
+          "files": {
+            ".cgram": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".oam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            "vram": {
+              "ok": true,
+              "mismatches": 0,
+              "regions": {
+                "obj": [
+                  0,
+                  8192
+                ]
+              },
+              "mismatches_by_region": {},
+              "first": []
+            }
+          }
+        },
+        "gate_d": {
+          "ok": true,
+          "expected_colors": 4,
+          "screen_colors": 4,
+          "color_map": [
+            [
+              [
+                0,
+                0,
+                0,
+                255
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            [
+              [
+                0,
+                0,
+                65,
+                255
+              ],
+              [
+                0,
+                0,
+                66
+              ]
+            ],
+            [
+              [
+                65,
+                131,
+                255,
+                255
+              ],
+              [
+                66,
+                132,
+                255
+              ]
+            ],
+            [
+              [
+                230,
+                246,
+                255,
+                255
+              ],
+              [
+                231,
+                247,
+                255
+              ]
+            ]
+          ],
+          "mismatched_pixels": 0,
+          "collisions": [],
+          "first": []
+        }
+      },
+      "controls": {
+        "fetch_hidden": {
+          "ok": true,
+          "variant_differs_px": 128,
+          "emulator_vs_variant_px": 128
+        }
+      },
+      "ok": true
+    },
+    {
+      "id": "snes_33_on_a_line",
+      "console": "snes",
+      "scene": "line",
+      "art": "src/tests/fixtures/codemode/snes/snes_H10_fail.px.js",
+      "gate_a": true,
+      "validator_errors": [
+        "SNES-H10"
+      ],
+      "gate_b": true,
+      "predicted_drop_pixels": 64,
+      "reference_vs_art_diff_pixels": 56,
+      "rom_sha256": "005efa05c1c9c6165b2f7417f790a459a78330d9e623bacb44e8d5f7c6b4ce06",
+      "rom_deterministic": true,
+      "rom_golden": true,
+      "cart": "lorom",
+      "header": {
+        "map_mode": 32,
+        "rom_size_kib": 128,
+        "bytes": 131072,
+        "checksum_ok": true
+      },
+      "cart_ok": true,
+      "gate_c": true,
+      "gate_d": true,
+      "compare": {
+        "gate_c": {
+          "ok": true,
+          "files": {
+            ".cgram": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".oam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            "vram": {
+              "ok": true,
+              "mismatches": 0,
+              "regions": {
+                "obj": [
+                  0,
+                  8192
+                ]
+              },
+              "mismatches_by_region": {},
+              "first": []
+            }
+          }
+        },
+        "gate_d": {
+          "ok": true,
+          "expected_colors": 3,
+          "screen_colors": 3,
+          "color_map": [
+            [
+              [
+                0,
+                0,
+                0,
+                255
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            [
+              [
+                255,
+                65,
+                0,
+                255
+              ],
+              [
+                255,
+                66,
+                0
+              ]
+            ],
+            [
+              [
+                255,
+                230,
+                32,
+                255
+              ],
+              [
+                255,
+                231,
+                33
+              ]
+            ]
+          ],
+          "mismatched_pixels": 0,
+          "collisions": [],
+          "first": []
+        }
+      },
+      "controls": {
+        "no_range_limit": {
+          "ok": true,
+          "variant_differs_px": 56,
+          "emulator_vs_variant_px": 56
+        }
+      },
+      "ok": true
+    },
+    {
+      "id": "snes_35_slivers",
+      "console": "snes",
+      "scene": "slivers",
+      "art": "src/tests/fixtures/codemode/snes/snes_H11_fail.px.js",
+      "gate_a": true,
+      "validator_errors": [
+        "SNES-H11"
+      ],
+      "gate_b": true,
+      "predicted_drop_pixels": 122,
+      "reference_vs_art_diff_pixels": 122,
+      "rom_sha256": "63d567139a71a21ac1b4763fe062ef743f39c03b6042125c9ebd1988e20c7f7c",
+      "rom_deterministic": true,
+      "rom_golden": true,
+      "cart": "lorom",
+      "header": {
+        "map_mode": 32,
+        "rom_size_kib": 128,
+        "bytes": 131072,
+        "checksum_ok": true
+      },
+      "cart_ok": true,
+      "gate_c": true,
+      "gate_d": true,
+      "compare": {
+        "gate_c": {
+          "ok": true,
+          "files": {
+            ".cgram": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            ".oam": {
+              "ok": true,
+              "mismatches": 0,
+              "first": []
+            },
+            "vram": {
+              "ok": true,
+              "mismatches": 0,
+              "regions": {
+                "obj": [
+                  0,
+                  8192
+                ]
+              },
+              "mismatches_by_region": {},
+              "first": []
+            }
+          }
+        },
+        "gate_d": {
+          "ok": true,
+          "expected_colors": 4,
+          "screen_colors": 4,
+          "color_map": [
+            [
+              [
+                0,
+                0,
+                0,
+                255
+              ],
+              [
+                0,
+                0,
+                0
+              ]
+            ],
+            [
+              [
+                0,
+                0,
+                65,
+                255
+              ],
+              [
+                0,
+                0,
+                66
+              ]
+            ],
+            [
+              [
+                65,
+                131,
+                255,
+                255
+              ],
+              [
+                66,
+                132,
+                255
+              ]
+            ],
+            [
+              [
+                230,
+                246,
+                255,
+                255
+              ],
+              [
+                231,
+                247,
+                255
+              ]
+            ]
+          ],
+          "mismatched_pixels": 0,
+          "collisions": [],
+          "first": []
+        }
+      },
+      "controls": {
+        "no_time_limit": {
+          "ok": true,
+          "variant_differs_px": 122,
+          "emulator_vs_variant_px": 122
+        },
+        "fetch_hidden": {
+          "ok": true,
+          "variant_differs_px": 122,
+          "emulator_vs_variant_px": 122
+        }
+      },
+      "ok": true
+    }
+  ]
+}

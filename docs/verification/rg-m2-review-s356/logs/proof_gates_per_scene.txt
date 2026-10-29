@@ -1,0 +1,13 @@
+nes_proof | rom aa38c883049f golden True | gate_c .pal:ok(0), .oam:ok(0), .nam:ok(0), .chr:ok(0) | gate_d ok True colors 16 16 |  {}
+nes_proof_tileset | rom 5667fb61dd15 golden True | gate_c .pal:ok(0), .oam:ok(0), .nam:ok(0), .chr:ok(0) | gate_d ok True colors 13 13 |  {}
+nes_hero | rom 6da2ad721fad golden True | gate_c .pal:ok(0), .oam:ok(0), .nam:ok(0), .chr:ok(0) | gate_d ok True colors 6 6 |  {}
+nes_9_on_a_line | rom 49d535a6c785 golden True | gate_c .pal:ok(0), .oam:ok(0), .nam:ok(0), .chr:ok(0) | gate_d ok True colors 2 2 |  {"predicted_drop_pixels": 64, "reference_vs_art_diff_pixels": 64}
+nes_mmc1_chr_ram | rom b29e1b77d48d golden True | gate_c .pal:ok(0), .oam:ok(0), .nam:ok(0), .chr:ok(0) | gate_d ok True colors 17 17 |  {}
+nes_flips_8x8 | rom 5c1ca9b5bddd golden True | gate_c .pal:ok(0), .oam:ok(0), .nam:ok(0), .chr:ok(0) | gate_d ok True colors 9 9 |  {}
+nes_flips_8x16 | rom 7a76204ea7d3 golden True | gate_c .pal:ok(0), .oam:ok(0), .nam:ok(0), .chr:ok(0) | gate_d ok True colors 9 9 |  {}
+snes_proof | rom 8bcd3312acc7 golden True | gate_c .cgram:ok(0), .oam:ok(0), vram:ok(0) | gate_d ok True colors 46 46 |  M2-15 oracle ok=True tiles=72/72 mism=[] CTRL={"controls": {}} {}
+snes_proof_tileset | rom 8c52807db636 golden True | gate_c .cgram:ok(0), .oam:ok(0), vram:ok(0) | gate_d ok True colors 30 30 |  CTRL={"controls": {}} {}
+snes_layers | rom 7622c3e7893c golden True | gate_c .cgram:ok(0), .oam:ok(0), vram:ok(0) | gate_d ok True colors 27 27 |  CTRL={"controls": {}} {}
+snes_34_slivers | rom 345d7bc5f3fc golden True | gate_c .cgram:ok(0), .oam:ok(0), vram:ok(0) | gate_d ok True colors 4 4 |  CTRL={"controls": {"fetch_hidden": {"ok": true, "variant_differs_px": 128, "emulator_vs_variant_px": 128}}} {}
+snes_33_on_a_line | rom 005efa05c1c9 golden True | gate_c .cgram:ok(0), .oam:ok(0), vram:ok(0) | gate_d ok True colors 3 3 |  CTRL={"controls": {"no_range_limit": {"ok": true, "variant_differs_px": 56, "emulator_vs_variant_px": 56}}} {"predicted_drop_pixels": 64, "reference_vs_art_diff_pixels": 56}
+snes_35_slivers | rom 63d567139a71 golden True | gate_c .cgram:ok(0), .oam:ok(0), vram:ok(0) | gate_d ok True colors 4 4 |  CTRL={"controls": {"no_time_limit": {"ok": true, "variant_differs_px": 122, "emulator_vs_variant_px": 122}, "fetch_hidden": {"ok": true, "variant_differs_px": 122, "emulator_vs_variant_px": 122}}} {"predicted_drop_pixels": 122, "reference_vs_art_diff_pixels": 122}

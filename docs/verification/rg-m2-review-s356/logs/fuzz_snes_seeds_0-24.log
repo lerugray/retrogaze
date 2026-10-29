@@ -1,0 +1,26 @@
+{'seed': 0, 'errors': [], 'obsel': 3, 'objs': 15, 'layers': ['bg1', 'bg2', 'bg3'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 1, 'errors': [], 'obsel': 0, 'objs': 1, 'layers': ['bg1', 'bg3'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 2, 'skipped': "CodeModeError: scene 'fuzz' is not console-legal (SNES-H14)"}
+{'seed': 3, 'skipped': "CodeModeError: scene 'fuzz' is not console-legal (SNES-H11, SNES-H8)"}
+{'seed': 4, 'errors': [], 'obsel': 3, 'objs': 14, 'layers': ['bg1', 'bg2'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 5, 'errors': [], 'obsel': 3, 'objs': 4, 'layers': ['bg1'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 6, 'errors': ['SNES-H11'], 'obsel': 3, 'objs': 27, 'layers': ['bg1', 'bg2'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 7, 'errors': [], 'obsel': 0, 'objs': 8, 'layers': ['bg1', 'bg2', 'bg3'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 8, 'errors': [], 'obsel': 0, 'objs': 1, 'layers': ['bg1', 'bg2', 'bg3'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 9, 'errors': [], 'obsel': 3, 'objs': 11, 'layers': ['bg1', 'bg2', 'bg3'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 10, 'errors': [], 'obsel': 3, 'objs': 15, 'layers': ['bg1'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 11, 'errors': ['SNES-H11'], 'obsel': 3, 'objs': 41, 'layers': ['bg1', 'bg2'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 12, 'errors': [], 'obsel': 3, 'objs': 5, 'layers': ['bg1', 'bg2'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 13, 'errors': [], 'obsel': 0, 'objs': 22, 'layers': ['bg1', 'bg2', 'bg3'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 14, 'errors': [], 'obsel': 3, 'objs': 14, 'layers': ['bg1', 'bg3'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 15, 'errors': [], 'obsel': 3, 'objs': 14, 'layers': ['bg1', 'bg2', 'bg3'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 16, 'errors': [], 'obsel': 3, 'objs': 12, 'layers': ['bg1', 'bg2', 'bg3'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 17, 'errors': ['SNES-H10', 'SNES-H11'], 'obsel': 3, 'objs': 55, 'layers': ['bg1', 'bg2'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 18, 'errors': [], 'obsel': 3, 'objs': 7, 'layers': ['bg1', 'bg2', 'bg3'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 19, 'errors': [], 'obsel': 1, 'objs': 42, 'layers': ['bg1', 'bg2'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 20, 'errors': [], 'obsel': 1, 'objs': 3, 'layers': ['bg1', 'bg2'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 21, 'skipped': "CodeModeError: scene 'fuzz' is not console-legal (SNES-H14)"}
+{'seed': 22, 'errors': ['SNES-H11'], 'obsel': 3, 'objs': 39, 'layers': ['bg1', 'bg3'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 23, 'errors': [], 'obsel': 3, 'objs': 3, 'layers': ['bg1', 'bg2', 'bg3'], 'gate_b': True, 'gate_c': True, 'gate_d': True, 'ok': True}
+{'seed': 24, 'skipped': "CodeModeError: scene 'fuzz' is not console-legal (SNES-H8)"}
+21 scenes ran in Mesen (17 legal, 4 runtime-limit), 4 skipped, 0 disagreed
