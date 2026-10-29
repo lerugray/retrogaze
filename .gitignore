@@ -34,3 +34,4 @@ test-outputs/
 
 # Code mode outputs of the bundled examples
 examples/codemode/out/
+examples/codemode/snes/out/

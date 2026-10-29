@@ -294,7 +294,8 @@ Animations follow the NES rules in §2.2: palettes fixed per scene, CHR union by
 
 - **Layers.** `rg.scene({ bg1, bg2, bg3 })` names one asset per layer, drawn at the screen origin on one 32×32
   tilemap (an image up to 256×256; rows 224-255 are encoded but not shown). Back to front: backdrop, BG3, BG2, BG1,
-  OBJ: every BG tilemap entry has priority 0 and every OBJ priority 3. SNES-H15 also covers unknown assets and
+  OBJ: every BG tilemap entry has priority 0 and every OBJ priority 3. `bg3Front: true` sets BGMODE bit 3 and the
+  priority bit on every BG3 entry, which puts BG3 in front of everything, OBJs included (the usual mode-1 HUD). SNES-H15 also covers unknown assets and
   malformed placements (the NES build uses NES-H13 for those).
 - **SNES-H2** fails for a placement `size` that is no OBJ size at all (`"8x16"`, `"24x24"`) and for `obj:<n>`
   layers combined with post-processing. Requesting an undocumented size without `allowUndocumentedObjSizes` is

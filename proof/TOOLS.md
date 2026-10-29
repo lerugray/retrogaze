@@ -317,7 +317,7 @@ bug cannot cancel out. `snes_proof`: 72 of 72 tiles equal, palettes 0-2.
 |---|---|---|---|---|
 | `snes_proof` | `examples/codemode/snes/snes_proof.px.js` `proof`: 32x32 hero = one 32x32 OBJ, slimes in a 2nd OBJ palette, BG1 tile set in 3 BG palettes | `8bcd3312acc736f83bb371ef0c373bfcc678081c23a2dd053231a6e6073b90b4` | pass | pass, 46 colors |
 | `snes_proof_tileset` | the same file, `land` (BG1 only) | `8c52807db636dee15a855a8b35bb71827f600b8648d14602270b5939638ed68b` | pass | pass, 30 colors |
-| `snes_layers` | `examples/codemode/snes/snes_layers.px.js`: BG1 + BG2 + 2bpp BG3 HUD + flipped OBJs | `74f77fefa5add2514d8594663d18d6ec98d93762cdc485a9c121795ab12b0687` | pass | pass, 24 colors |
+| `snes_layers` | `examples/codemode/snes/snes_layers.px.js`: BG1 + BG2 + a 2bpp BG3 HUD in front (`bg3Front`: BGMODE `$09`, priority-1 BG3 tiles) + flipped OBJs | `7622c3e7893c1354c91a1cd9251e9b64125e47b2fb11d2512fea5fa1304dfb58` | pass | pass, 27 colors |
 | `snes_34_slivers` | `snes_H11_pass`: 34 slivers incl. both edge straddlers | `345d7bc5f3fcef349ae10bb51e73ee3db8141eadc51509daaa15205439a898b3` | pass | pass |
 | `snes_33_on_a_line` | `snes_H10_fail` (`rom --force`) | `005efa05c1c9c6165b2f7417f790a459a78330d9e623bacb44e8d5f7c6b4ce06` | pass | pass: reference = art except OAM #32 on lines 100-107 |
 | `snes_35_slivers` | `snes_H11_fail` (`rom --force`) | `63d567139a71a21ac1b4763fe062ef743f39c03b6042125c9ebd1988e20c7f7c` | pass | pass: reference = art except OAM #0's right sliver, lines 100-115 |
@@ -328,7 +328,9 @@ One SNES scene takes about 1.2 s in Mesen here.
 ### Fuzzing (`fuzz_snes.py`)
 
 Seeds 0-79 here: 70 scenes ran in Mesen (60 legal, 10 with SNES-H10/H11 overflows built with `--force`), 0
-disagreements; 10 seeds were genuinely illegal (VRAM over budget, three forced OBJ sizes) and were skipped. An
+disagreements; 10 seeds were genuinely illegal (VRAM over budget, three forced OBJ sizes) and were skipped. After
+`bg3Front` was added to the generator, seeds 0-59: 53 ran (42 legal, 11 overflows, 16 with BG3 in front), 0
+disagreements, 7 skipped. An
 earlier run found one decomposer weakness (a 64x64 OBJ chosen near the bottom edge, which would wrap: SNES-H4,
 while a smaller OBSEL pair is legal); SNES-H4 is now a hard limit in the pair search
 (`test_codemode_rules_snes.py::test_pair_choice_avoids_unplaceable_objs`). CI runs seeds 0-24 (about 40 s).

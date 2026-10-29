@@ -73,6 +73,8 @@ def art(seed: int) -> str:
         lines.append(f'scene("hud", {{ w: 256, h: 224 }}, text({r.randrange(8, 120)}, {r.randrange(4, 200)}, "{t}", '
                      f'"{hud[0][0]}"), px(2, 2, "{hud[1][0]}"), px(3, 2, "{hud[2][0]}"))')
         spec.append('bg3: "hud"')
+        if r.random() < 0.5:
+            spec.append("bg3Front: true")
     obj = []
     for i in range(r.randint(1, 14)):
         g = r.choice(objg)

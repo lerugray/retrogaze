@@ -10,8 +10,8 @@ Deliberately independent of the scene model: it reads only a 64 KiB VRAM image, 
     flip each half on its own, as the hardware does); per line the first 32 OBJs in range from OAM #0
     (an X = -256 OBJ is in range), their on-screen tiles fetched from the last kept OBJ back to OAM #0,
     at most 34; the lower OAM index wins;
-  * mode 1 priority (BGMODE bit 3 clear): OBJ.3 > BG1.1 > BG2.1 > OBJ.2 > BG1.0 > BG2.0 > OBJ.1 > BG3.1 >
-    OBJ.0 > BG3.0 > backdrop.
+  * mode 1 priority: OBJ.3 > BG1.1 > BG2.1 > OBJ.2 > BG1.0 > BG2.0 > OBJ.1 > BG3.1 > OBJ.0 > BG3.0 >
+    backdrop; with BGMODE bit 3 set, BG3.1 moves to the front of everything.
 Colors expand 5 bits to 8 with Retrogaze's e(q) = (q * 255) // 31.
 """
 
@@ -161,8 +161,12 @@ def _objs(vram: bytes, oam: bytes, regs: dict, range_limit: int = 32, time_limit
 def render(vram: bytes, cgram: bytes, oam: bytes, regs: dict, **variant) -> np.ndarray:
     """(224, 256, 4) uint8 RGBA of what the PPU shows for one frame. ``variant``: see ``_objs``."""
     assert len(vram) == 65536 and len(cgram) == 512 and len(oam) == 544
-    if regs.get("BGMODE", 1) & 0x0F != 1:
-        raise NotImplementedError("the reference PPU models BG mode 1 (BG3 priority bit clear)")
+    mode = regs.get("BGMODE", 1)
+    if mode & 0xF7 != 1:
+        raise NotImplementedError("the reference PPU models BG mode 1 with 8x8 BG tiles")
+    bg_prio = dict(BG_PRIO)
+    if mode & 0x08:
+        bg_prio[3] = (1, 11)                          # BG3 priority-1 tiles in front of OBJ.3 (10)
     rgb = _rgb(cgram)
     tm = regs.get("TM", 0x1F)
     best = np.zeros((H, W), dtype=np.int32)          # priority of the winning layer (0 = backdrop)
@@ -170,7 +174,7 @@ def render(vram: bytes, cgram: bytes, oam: bytes, regs: dict, **variant) -> np.n
     for n in (1, 2, 3):
         if tm & (1 << (n - 1)):
             idx, pri = _bg(vram, regs, n)
-            p = np.where(pri == 1, BG_PRIO[n][1], BG_PRIO[n][0])
+            p = np.where(pri == 1, bg_prio[n][1], bg_prio[n][0])
             win = (idx >= 0) & (p > best)
             best = np.where(win, p, best)
             color = np.where(win, idx, color)

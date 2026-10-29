@@ -255,8 +255,9 @@ def encode_scene(m: SceneModel) -> SnesBytes:
     _check_model(m)
     chr_ = {layer: [b"".join((tile_4bpp if BPP[layer] == 4 else tile_2bpp)(p) for p in tiles)
                     for tiles in m.bg_tiles[layer]] for layer in m.layers}
-    maps = {layer: [b"".join(int(w).to_bytes(2, "little") for w in words.ravel()) for words in m.maps[layer]]
-            for layer in m.layers}
+    prio = {layer: 0x2000 if (layer == "bg3" and m.bg3_front) else 0 for layer in m.layers}   # BG3 in front
+    maps = {layer: [b"".join((int(w) | prio[layer]).to_bytes(2, "little") for w in words.ravel())
+                    for words in m.maps[layer]] for layer in m.layers}
     obj_chr = [_obj_tables(m, ci) for ci in range(m.chr_sets)] if m.obj_tables else []
     layout = allocate_vram(VramRequest(bg_chr={layer: max(len(c) for c in chr_[layer]) for layer in m.layers},
                                        maps=list(m.layers), obj_tables=m.obj_tables))
@@ -272,6 +273,7 @@ def encode_scene(m: SceneModel) -> SnesBytes:
             names[(s, i)] = o.tile
         oams.append(oam_bytes(enc))
     regs = {k: v for k, v in layout.registers.items() if not k.startswith("OBSEL_")}
+    regs["BGMODE"] = 0x09 if m.bg3_front else 0x01        # bit 3: mode 1 BG3 priority
     regs["OBSEL"] = (m.obsel << 5) | (layout.registers["OBSEL_NN"] << 3) | layout.registers["OBSEL_BASE"]
     for layer in BG_LAYERS:
         regs[f"{layer.upper()}HOFS"] = 0

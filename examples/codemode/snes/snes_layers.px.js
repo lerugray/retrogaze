@@ -1,6 +1,7 @@
 // snes_layers.px.js: all three mode-1 BG layers and flipped OBJs.
 // BG2 (4bpp) is a sunset with mountains, BG1 (4bpp) the ground and floating platforms in front of it, and
-// BG3 (2bpp, 3 colors per tile) a HUD whose palettes share CGRAM 0-31 with BG palettes 0-1. Birds are
+// BG3 (2bpp, 3 colors per tile) a HUD whose palettes share CGRAM 0-31 with BG palettes 0-1; bg3Front puts it in
+// front of every layer and OBJ, as mode-1 games do for a HUD. Birds are
 // placed as drawn and flipped on X, Y and both; transparent pixels show the layer below.
 // No image model anywhere: every pixel below comes from these lines.
 
@@ -61,7 +62,7 @@ sprite("coin", { w: 16, h: 16 }, circ(7, 7, 7, "O"), circ(7, 7, 6, "t"), circ(7,
   px(5, 4, "w"), px(4, 5, "w"))
 
 rg.scene("layers", {
-  bg1: "near", bg2: "far", bg3: "hud",
+  bg1: "near", bg2: "far", bg3: "hud", bg3Front: true,      // BGMODE bit 3: the HUD in front of everything
   backdrop: snes(6, 3, 12),
   obj: [["bird", 40, 40], ["bird", 88, 40, { flip: "x" }], ["bird", 136, 56, { flip: "y" }],
         ["bird", 216, 64, { flip: "xy" }], ["coin", 56, 112], ["coin", 72, 112], ["coin", 176, 80],

@@ -164,7 +164,7 @@ def _snes_scene_report(m) -> dict:
     words = lambda slots: [[f"${snes_enc.cgram_word(hex_of(c)):04X}" if c is not None else None for c in p]  # noqa: E731
                            for p in slots if any(c is not None for c in p)]
     return {
-        "mode": 1, "layers": m.layers, "obsel": m.obsel,
+        "mode": 1, "layers": m.layers, "bg3_front": m.bg3_front, "obsel": m.obsel,
         "obj_sizes": [f"{w}x{h}" for w, h in snes.OBSEL_PAIRS[m.obsel]],
         "chr_model": m.chr_model, "states": m.states,
         "backdrop": f"${snes_enc.cgram_word(m.backdrop_hex):04X}",
@@ -282,7 +282,16 @@ def _cells_for_snes(asset: str, frame: int, models, encoded) -> list[dict]:
 def _snes_screen_index(m) -> tuple[np.ndarray, list[int]]:
     """CGRAM indices of the legal SNES screen (state 0) and the 256 CGRAM colors, in the composite's paint order."""
     idx = np.zeros((snes.H, snes.W), dtype=np.int32)
-    for layer in ("bg3", "bg2", "bg1"):
+    order = ("bg2", "bg1", "obj", "bg3") if m.bg3_front else ("bg3", "bg2", "bg1", "obj")
+    for layer in order:
+        if layer == "obj":
+            for o in reversed(m.oam[0]):
+                for v in range(o.h):
+                    for u in range(o.w):
+                        y, x = o.top + v, o.x + u
+                        if o.pix[v, u] >= 0 and 0 <= y < snes.H and 0 <= x < snes.W:
+                            idx[y, x] = 128 + 16 * o.palette + int(o.pattern[v, u])
+            continue
         if layer not in m.layers:
             continue
         plane = m.planes[layer][0]
@@ -295,12 +304,6 @@ def _snes_screen_index(m) -> tuple[np.ndarray, list[int]]:
                 base = 4 * p if layer == "bg3" else 16 * p
                 region = idx[8 * ty:8 * ty + 8, 8 * tx:8 * tx + 8]
                 idx[8 * ty:8 * ty + 8, 8 * tx:8 * tx + 8] = np.where(pat > 0, base + pat, region)
-    for o in reversed(m.oam[0]):
-        for v in range(o.h):
-            for u in range(o.w):
-                y, x = o.top + v, o.x + u
-                if o.pix[v, u] >= 0 and 0 <= y < snes.H and 0 <= x < snes.W:
-                    idx[y, x] = 128 + 16 * o.palette + int(o.pattern[v, u])
     cg = snes_enc.cgram_bytes(m)
     colors = [rgb_of(snes.word_hex(cg[2 * i] | (cg[2 * i + 1] << 8))) for i in range(256)]
     return idx, colors

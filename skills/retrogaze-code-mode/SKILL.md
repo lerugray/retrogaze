@@ -124,7 +124,8 @@ blob goes in VRAM and the PPU register values), per-palette slices in `pal/`, an
 - Two OBJ sizes per frame (OBSEL). The decomposer picks the pair with the fewest OBJs; pin it with `obsel` or a
   placement `size` when you need control. There is no 8x16 OBJ.
 - 32 OBJs and 34 8-px slivers per line: wide OBJs cost slivers even where they are transparent.
-- Back to front: backdrop, BG3, BG2, BG1, OBJ. Transparent pixels show the layer below.
+- Back to front: backdrop, BG3, BG2, BG1, OBJ. Transparent pixels show the layer below. For a HUD, draw it on BG3
+  and set `bg3Front: true`: BG3 then sits in front of everything, OBJs included.
 
 ## SNES rules (generated from the rule registry; do not edit by hand)
 
@@ -134,7 +135,7 @@ blob goes in VRAM and the PPU register values), per-palette slices in `pal/`, an
 - Colors: `snes(r5, g5, b5)` (each 0-31) or `bgr555(word)` return the hex of a 15-bit color; hex literals must be canonical SNES colors (channel = (q * 255) // 31).
   The active palette starts empty: bind keys with `pal({ s: snes(31, 24, 16), k: snes(0, 0, 4) })`.
 - Disabled (they leave the palette): `lighting`, `lamp`, `bump`, `normals`, `glow` without `ramp`, partial-alpha colors, `Math.random`, `Date`.
-- `rg.scene(name, { bg1, bg2, bg3, obj: [[asset, x, y, { flip, size }]...], backdrop, obsel, palettes, chr, mode, allowUndocumentedObjSizes })` declares one Mode 1 frame: BG1/BG2 4bpp (15 colors per tile), BG3 2bpp (3), OBJ 4bpp (15 per OBJ). Back to front: backdrop, BG3, BG2, BG1, OBJ.
+- `rg.scene(name, { bg1, bg2, bg3, bg3Front, obj: [[asset, x, y, { flip, size }]...], backdrop, obsel, palettes, chr, mode, allowUndocumentedObjSizes })` declares one Mode 1 frame: BG1/BG2 4bpp (15 colors per tile), BG3 2bpp (3), OBJ 4bpp (15 per OBJ). Back to front: backdrop, BG3, BG2, BG1, OBJ; with `bg3Front: true` (BGMODE bit 3) BG3 moves in front of everything, OBJs included: a HUD.
 - OBJ sizes come in OBSEL pairs (8/16, 8/32, 8/64, 16/32, 16/64, 32/64); the decomposer picks the cheapest pair unless `obsel` or a placement `size` ("16x16") pins it. 16x32/32x64 need `allowUndocumentedObjSizes: true`.
 - `rg.tileset(name)` marks a BG tile set (BG1; every 8x8 tile picks its own palette).
 - Sprite layers named `obj:<n>` become overlapping OBJs.

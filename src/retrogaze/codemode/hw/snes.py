@@ -14,7 +14,8 @@ Hardware behavior modeled (SNESdev wiki; edge cases pinned against Mesen 2, see 
     rest). Their tiles are fetched from the last kept OBJ back to OAM #0, left to right on screen, only
     tiles that reach the screen; 34 are fetched ("time over" drops the rest: the frontmost OBJs' slivers).
   * the lower OAM index is in front; with OBJ priority 3 and BG tile priority 0 the order (front to back)
-    is OBJ, BG1, BG2, BG3, backdrop.
+    is OBJ, BG1, BG2, BG3, backdrop. With ``bg3Front`` (BGMODE bit 3 and priority-1 BG3 tiles) BG3 is in
+    front of everything: BG3, OBJ, BG1, BG2, backdrop.
 """
 
 from __future__ import annotations
@@ -440,6 +441,7 @@ class SceneModel:
     chr_sets: int = 1
     obsel: int = 0
     allow_undocumented: bool = False
+    bg3_front: bool = False
     backdrop: int = 0
     layers: list[str] = field(default_factory=list)
     planes: dict[str, list[np.ndarray]] = field(default_factory=dict)       # layer -> per state (256, 256) rgb
@@ -601,6 +603,7 @@ class SceneAnalyzer:
             self.add("SNES-H14", f"chr must be one of {', '.join(CHR_MODELS)}, got {m.chr_model!r}")
             m.chr_model = "union"
         m.allow_undocumented = spec.get("allowUndocumentedObjSizes") is True
+        m.bg3_front = spec.get("bg3Front") is True
         placements = spec.get("obj") or []
         names = [spec[k] for k in BG_LAYERS if isinstance(spec.get(k), str)] + \
                 [p[0] for p in placements if isinstance(p, list) and p]
@@ -1099,7 +1102,7 @@ class SceneAnalyzer:
         m = self.m
         for s in range(m.states):
             scr = np.full((H, W), m.backdrop, dtype=np.int64)
-            for layer in ("bg3", "bg2", "bg1"):
+            for layer in (("bg2", "bg1") if m.bg3_front else ("bg3", "bg2", "bg1")):
                 if layer in m.layers:
                     p = m.planes[layer][s][:H, :W]
                     scr = np.where(p >= 0, p, scr)
@@ -1113,6 +1116,9 @@ class SceneAnalyzer:
                         x = o.x + u
                         if 0 <= x < W and row[u] >= 0:
                             scr[y, x] = row[u]
+            if m.bg3_front and "bg3" in m.layers:
+                p = m.planes["bg3"][s][:H, :W]
+                scr = np.where(p >= 0, p, scr)
             img = np.zeros((H, W, 4), dtype=np.uint8)
             img[..., 0] = (scr >> 16) & 255
             img[..., 1] = (scr >> 8) & 255

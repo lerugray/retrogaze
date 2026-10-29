@@ -99,7 +99,7 @@ SNES_LIMITS = {
     "screenW": 256, "screenH": 224,
 }
 
-SNES_SCENE_KEYS = ["bg1", "bg2", "bg3", "obj", "backdrop", "obsel", "palettes", "chr", "mode",
+SNES_SCENE_KEYS = ["bg1", "bg2", "bg3", "bg3Front", "obj", "backdrop", "obsel", "palettes", "chr", "mode",
                    "allowUndocumentedObjSizes"]
 
 
@@ -202,9 +202,10 @@ def _snes_cheatsheet() -> str:
         "  The active palette starts empty: bind keys with `pal({ s: snes(31, 24, 16), k: snes(0, 0, 4) })`.",
         "- Disabled (they leave the palette): `lighting`, `lamp`, `bump`, `normals`, `glow` without `ramp`, "
         "partial-alpha colors, `Math.random`, `Date`.",
-        "- `rg.scene(name, { bg1, bg2, bg3, obj: [[asset, x, y, { flip, size }]...], backdrop, obsel, palettes, chr, "
-        "mode, allowUndocumentedObjSizes })` declares one Mode 1 frame: BG1/BG2 4bpp (15 colors per tile), BG3 2bpp "
-        "(3), OBJ 4bpp (15 per OBJ). Back to front: backdrop, BG3, BG2, BG1, OBJ.",
+        "- `rg.scene(name, { bg1, bg2, bg3, bg3Front, obj: [[asset, x, y, { flip, size }]...], backdrop, obsel, "
+        "palettes, chr, mode, allowUndocumentedObjSizes })` declares one Mode 1 frame: BG1/BG2 4bpp (15 colors per "
+        "tile), BG3 2bpp (3), OBJ 4bpp (15 per OBJ). Back to front: backdrop, BG3, BG2, BG1, OBJ; with "
+        "`bg3Front: true` (BGMODE bit 3) BG3 moves in front of everything, OBJs included: a HUD.",
         "- OBJ sizes come in OBSEL pairs (8/16, 8/32, 8/64, 16/32, 16/64, 32/64); the decomposer picks the cheapest "
         "pair unless `obsel` or a placement `size` (\"16x16\") pins it. 16x32/32x64 need "
         "`allowUndocumentedObjSizes: true`.",

@@ -163,3 +163,31 @@ def test_pair_choice_avoids_unplaceable_objs():
     r = build_source(src)
     assert r.verdict == "legal", violations(r.report)
     assert all(o.top + o.h <= 256 for o in scene(r, "x").oam[0])
+
+
+def test_bg3_in_front_for_a_hud():
+    """Mode 1's BG3 priority bit (BGMODE bit 3 + priority-1 BG3 tiles) puts BG3 in front of every layer and every
+    OBJ: the usual mode-1 HUD. Without it BG3 is the back layer and an opaque BG2 hides it."""
+    from retrogaze.codemode import ppu_ref_snes
+    from retrogaze.codemode.encode.snes import encode_scene
+
+    src = ('pal({ a: snes(4, 8, 20), r: snes(31, 8, 0), w: snes(31, 31, 31) })\n'
+           'scene("sky", { w: 256, h: 224 }, rect(0, 0, 256, 224, "a"))\n'
+           'scene("hud", { w: 256, h: 224 }, rect(40, 40, 16, 16, "w"))\n'
+           'sprite("s", { w: 16, h: 16 }, rect(0, 0, 16, 16, "r"))\n'
+           'rg.scene("x", { bg2: "sky", bg3: "hud", obj: [["s", 48, 48]]%s })\n')
+    back = scene(build_source(src % ""), "x")
+    front_r = build_source(src % ", bg3Front: true")
+    front = scene(front_r, "x")
+    assert front_r.verdict == "legal"
+    w, a, red = [255, 255, 255], [32, 65, 164], [255, 65, 0]      # e(4) = 32, e(8) = 65, e(20) = 164
+    assert list(back.composites[0][44, 44, :3]) == a          # BG3 behind the opaque BG2
+    assert list(front.composites[0][44, 44, :3]) == w         # BG3 in front of BG2 ...
+    assert list(front.composites[0][50, 50, :3]) == w         # ... and of the OBJ
+    assert list(front.composites[0][60, 60, :3]) == red
+    b = encode_scene(front)
+    assert b.registers["BGMODE"] == 0x09
+    assert all(int.from_bytes(b.maps["bg3"][0][i:i + 2], "little") & 0x2000 for i in range(0, 2048, 2))
+    got = ppu_ref_snes.render(b.vram(0), b.cgram, b.oam[0], b.registers)
+    assert (got == front.composites[0]).all()
+    assert front_r.report["scenes"][0]["bg3_front"] is True
