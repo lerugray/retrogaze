@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lerugray/retrogaze/src/retrogaze/codemode/schema/provenance-1.json",
+  "title": "Retrogaze code-mode provenance, version 1",
+  "description": "Marks an output as code-drawn: pixels made by the vendored pxl renderer running recorded source files, with no AI image model and no raster input.",
+  "type": "object",
+  "required": ["schema", "mode", "digital_source_type", "ai_image_model", "raster_inputs", "network_used", "renderer",
+               "retrogaze", "source", "source_author", "console", "tier_requested", "verdict"],
+  "properties": {
+    "schema": {"const": "retrogaze.provenance/1"},
+    "mode": {"const": "code"},
+    "digital_source_type": {"const": "http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicMedia"},
+    "ai_image_model": {"type": "null"},
+    "raster_inputs": {"type": "array", "maxItems": 0},
+    "network_used": {"const": false},
+    "renderer": {
+      "type": "object",
+      "required": ["name", "upstream", "commit", "vendored_tree_sha256"],
+      "properties": {
+        "name": {"const": "pxl"},
+        "upstream": {"type": "string"},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "vendored_tree_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "node": {"type": "string"}
+      }
+    },
+    "retrogaze": {
+      "type": "object",
+      "required": ["version", "binding_sha256"],
+      "properties": {
+        "version": {"type": "string"},
+        "binding_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "git_commit": {"type": "string"}
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["entry", "files"],
+      "properties": {
+        "entry": {"type": "string"},
+        "files": {"type": "object", "minProperties": 1,
+                  "additionalProperties": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}
+      }
+    },
+    "source_author": {"enum": ["human", "llm", "mixed", "unknown"]},
+    "console": {"type": "string"},
+    "tier_requested": {"enum": ["like", "legal"]},
+    "verdict": {"enum": ["legal", "like", "fail"]},
+    "pixels_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "built_at": {"type": "string"}
+  }
+}

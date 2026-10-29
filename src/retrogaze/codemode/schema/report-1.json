@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lerugray/retrogaze/src/retrogaze/codemode/schema/report-1.json",
+  "title": "Retrogaze code-mode build report, version 1",
+  "type": "object",
+  "required": ["schema", "verdict"],
+  "properties": {
+    "schema": {"const": "retrogaze.report/1"},
+    "console": {"type": "string"},
+    "tier_requested": {"enum": ["like", "legal"]},
+    "verdict": {"enum": ["legal", "like", "fail", "error"]},
+    "errors": {"type": "array", "items": {"type": "object", "required": ["code", "message"]}},
+    "violations": {"type": "array", "items": {"$ref": "#/$defs/violation"}},
+    "scenes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "declared", "checked", "legal", "violations"],
+        "properties": {"violations": {"type": "array", "items": {"$ref": "#/$defs/violation"}}}
+      }
+    }
+  },
+  "$defs": {
+    "violation": {
+      "type": "object",
+      "required": ["rule", "tier", "scope", "severity", "message"],
+      "properties": {
+        "rule": {"type": "string", "pattern": "^(NES-[LH][0-9]+|CM-[A-Z-]+)$"},
+        "tier": {"enum": ["like", "legal", "build"]},
+        "scope": {"enum": ["image", "scene"]},
+        "severity": {"enum": ["error", "warning", "info"]},
+        "blame": {"type": "array", "items": {"type": "object", "required": ["loc", "op", "pixels"]}}
+      }
+    }
+  }
+}

@@ -38,6 +38,25 @@ python -m retrogaze ../test_sprites/final_validation/early_coin.png --size 16x16
 
 `--size` takes multiples of 8. `--max-colors` sets the per-tile cap (NES default: 4).
 
+## Code mode: art drawn as code, proven NES-legal
+
+Code mode draws pixel art from a small `.px.js` program (the [pxl](https://github.com/crsolver/claude-pxl) DSL,
+vendored in `third_party/pxl`). No image model is involved. Each build checks the art against real NES hardware
+limits (2C02 palette, attribute areas, 3 colors per sprite, 8 sprites per scanline, pattern-table budgets). It exports
+the bytes the console loads (CHR, palette, nametable, OAM, plus ca65/cc65 includes), and it marks every output as
+code-drawn with provenance you can verify. It needs Node 22.18 or newer.
+
+```bash
+cd src
+python -m retrogaze.codemode build ../examples/codemode/nes_proof.px.js --console nes --tier legal
+python -m retrogaze.codemode verify ../examples/codemode/out/nes/legal
+python -m retrogaze.codemode rom ../examples/codemode/nes_proof.px.js     # viewer ROM, needs cc65
+```
+
+Every violation names the source line that painted the bad pixels. The `proof/` harness runs the exported bytes in
+Mesen 2 to prove the result. See [docs/spec/CODE-MODE-SPEC.md](docs/spec/CODE-MODE-SPEC.md) and the agent skill in
+`skills/retrogaze-code-mode/`.
+
 ## Web app
 
 ```bash

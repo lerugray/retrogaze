@@ -31,3 +31,6 @@ output/
 frontend/app.min.js
 src/test_output/
 test-outputs/
+
+# Code mode outputs of the bundled examples
+examples/codemode/out/

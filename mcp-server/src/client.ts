@@ -15,6 +15,11 @@ import type {
   PalettesResponse,
   StatusResponse,
   ApiError,
+  CodeBindingResponse,
+  CodeBuildRequest,
+  CodeBuildResponse,
+  CodeVerifyRequest,
+  CodeVerifyResponse,
 } from "./types.js";
 
 export class RetrogazeApiError extends Error {
@@ -122,5 +127,20 @@ export class RetrogazeClient {
 
   async getStatus(): Promise<StatusResponse> {
     return this.request<StatusResponse>("GET", "/mcp/status");
+  }
+
+  // --- Code mode (needs RETROGAZE_CODE_MODE=1 on the API; local by default) ---
+
+  async codeBinding(console: string, tier: string): Promise<CodeBindingResponse> {
+    const q = `?console=${encodeURIComponent(console)}&tier=${encodeURIComponent(tier)}`;
+    return this.request<CodeBindingResponse>("GET", `/code/binding${q}`);
+  }
+
+  async codeBuild(params: CodeBuildRequest): Promise<CodeBuildResponse> {
+    return this.request<CodeBuildResponse>("POST", "/code/build", params);
+  }
+
+  async codeVerify(params: CodeVerifyRequest): Promise<CodeVerifyResponse> {
+    return this.request<CodeVerifyResponse>("POST", "/code/verify", params);
   }
 }

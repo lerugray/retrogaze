@@ -99,3 +99,57 @@ export interface StatusResponse {
 export interface ApiError {
   detail: string;
 }
+
+// --- Code mode API (/code/*) ---
+
+export interface CodeBuildRequest {
+  files: Record<string, string>;
+  entry: string;
+  console?: string;
+  tier?: "like" | "legal";
+  author?: "human" | "llm" | "mixed" | "unknown";
+  include_outputs?: boolean;
+}
+
+export interface CodeViolation {
+  rule: string;
+  tier: string;
+  scope: string;
+  severity: string;
+  message: string;
+  asset?: string;
+  scene?: string;
+  hint?: string;
+  blame?: { loc: string | null; op: string; pixels: number }[];
+}
+
+export interface CodeBuildResponse {
+  exit_code: number;
+  verdict: string;
+  report: {
+    verdict: string;
+    errors?: { code: string; message: string; loc?: string | null }[];
+    violations?: CodeViolation[];
+    scenes?: { name: string; legal: boolean; checked: boolean; violations: CodeViolation[]; budgets?: Record<string, { used: number; max: number }> }[];
+  };
+  provenance: Record<string, unknown> | null;
+  manifest: Record<string, unknown> | null;
+  outputs: Record<string, string> | null;
+}
+
+export interface CodeVerifyRequest {
+  files: Record<string, string>;
+  manifest: Record<string, unknown>;
+  outputs: Record<string, string>;
+}
+
+export interface CodeVerifyResponse {
+  exit_code: number;
+  messages: string[];
+}
+
+export interface CodeBindingResponse {
+  console: string;
+  tier: string;
+  cheatsheet: string;
+}

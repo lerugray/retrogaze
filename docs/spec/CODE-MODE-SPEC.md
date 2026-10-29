@@ -1,7 +1,7 @@
 # Retrogaze Code Mode: spec
 
-**Status:** approved for build (§8 decided 2026-10-29; M1 in progress). This document is the spec only; no product
-code ships with it.
+**Status:** approved for build (§8 decided 2026-10-29). **M1 (NES console-legal) is implemented** on branch
+`claude/happy-bardeen-i9nsun`; this spec records the decisions the build made (marked *M1:*).
 **Base:** `main` at `5276809`. **Date:** 2026-10-29.
 **Owner:** Ray Weiss. **First consoles at full legality:** NES and SNES (Ray's pick).
 
@@ -105,7 +105,9 @@ Every code-mode output carries this block. It is JSON Schema `retrogaze.provenan
 - `source_author` records who wrote the code. An LLM writing `.px.js` is an LLM writing code, not an image model.
   Whether the studio rule cares about that difference is Ray's call (**§8 Q1**). The field defaults to `unknown`.
   The agent skill tells agents to set it to `llm` when they wrote the code.
-- `built_at` is the only field outside the determinism hash (I2).
+- `built_at` is the only field outside the determinism hash (I2). *M1:* files embed only the deterministic fields
+  (plus `pixels_sha256` of that image); `built_at`, the Node version and the git commit live in `manifest.json` only,
+  so a rebuild at another commit or on another machine still compares equal.
 - **Where it goes:**
   - Each PNG gets an `iTXt` chunk with keyword `retrogaze:provenance` holding the JSON.
   - Each PNG also gets an XMP packet (`iTXt` keyword `XML:com.adobe.xmp`) with `Iptc4xmpExt:DigitalSourceType` set to
@@ -135,7 +137,7 @@ Every code-mode output carries this block. It is JSON Schema `retrogaze.provenan
 - **Scene**: everything the hardware shows in one frame: the BG layers, every OBJ placement, the backdrop and the
   palette assignment. A scene is declared with `rg.scene(...)` (§3.2). An asset built without a scene is checked as a
   **lone-asset scene**: pxl `scene()` assets as BG at the screen origin, `sprite()`/`anim()` assets as OBJ at
-  (0, 8) on NES or (0, 0) on SNES. So "this metasprite alone is too wide for a scanline" is still caught.
+  (8, 8) on NES (so any decomposition offset stays on screen) or (0, 0) on SNES. So "this metasprite alone is too wide for a scanline" is still caught.
 - **Scope tags**: **[I]** is a per-image check (needs only that one image). **[S]** is a per-scene check (needs the
   whole frame or animation: palettes, counts, budgets).
 - **Tiers**:
@@ -332,7 +334,8 @@ never passes silently.
                  proof/ (§5): ca65+ld65 viewer ROM → Mesen2 --testRunner → dumps + screenshot == exports + render
 ```
 
-**Legality is checked three times, by three independent mechanisms that must agree:**
+**Legality is checked three times, by three independent mechanisms that must agree** (*M1:* a disagreement is
+reported as `CM-ROUNDTRIP` and fails the build; it caught the left-column clipping case during the build):
 
 1. **Rules** (§2 tables). These give readable messages and blame.
 2. **Encoding plus re-render.** Building the real bytes and decoding them through `ppu_ref` must reproduce the
@@ -475,11 +478,14 @@ profile, the test says to delete the matching diff entry.
   multiple of 16.
 - **NES OBJ:**
   - Each placed asset is split into cells of the scene's sprite size. Fully transparent cells are skipped.
-  - The decomposition origin is searched over the 8×8 offsets (8×16 in 8×16 mode). The search minimizes, in order,
-    max-sprites-per-scanline, total sprites, and offset (lexicographic). It changes layout, not pixels, so I3 holds.
+  - The decomposition origin is searched over the 8×8 offsets (8×16 in 8×16 mode). *M1:* the search minimizes, in
+    order, cells over 3 colors, max sprites per scanline, total sprites, unique pattern tiles (with flip dedup), and
+    misalignment with the asset origin. So a mirror-symmetric sprite keeps the grid that lets its halves share tiles
+    through the H-flip bit. It changes layout, not pixels, so I3 holds.
   - **Layered sprites:** a sprite whose pxl layers are named `obj:<n>` is decomposed per layer. Overlapping hardware
     sprites with different palettes are allowed (the classic extra-color trick). They are counted in NES-H8/H9, and
-    OAM order follows paint order.
+    OAM order follows paint order. *M1:* layered sprites must not use post-processing (`mx`, `outline`, `flip`,
+    `crop`), because pxl applies it to the composite, not to each layer; the per-tile cap (NES-L3) applies per layer.
 - **SNES OBJ:**
   - The asset is tiled greedily with the large OBSEL size, then the small size, skipping transparent blocks.
   - The search covers both sizes of each candidate OBSEL pair, and the cheapest feasible pair wins.
@@ -574,6 +580,8 @@ examples/codemode/*.px.js
 src/tests/test_codemode_*.py   src/tests/fixtures/codemode/{nes,snes,m3}/*.px.js
 ```
 
+- **Art files.** *M1:* a build reads the entry file plus every file it reaches through string-literal
+  `include("…")` paths (at most 32 files, 256 KiB); computed include paths are not followed.
 - **CLI.** The entry point is `python -m retrogaze.codemode …`. The existing CLI (`cli.py`) takes a positional image
   path, so a `code` subcommand there would clash with it. It stays untouched.
 
@@ -677,7 +685,8 @@ report. Layout under the entry file's directory: `out/<console>/<tier>/…`. Eve
 ### 4.1 PNG
 
 - `png/<asset>.png`: RGBA at 1×, with provenance `iTXt` and XMP. Anim frames are numbered `<asset>_<n>.png`.
-- At the legal tier there is also `png/<asset>.idx.png`, an indexed PNG (mode `P`). Its `PLTE` is in hardware order:
+- At the legal tier there is also `png/<scene>.screen.idx.png` (*M1:* per scene, since one asset can use several
+  sprite palettes), an indexed PNG (mode `P`). Its `PLTE` is in hardware order:
   - NES: the 32-byte palette-RAM image, with index = `palette*4 + entry`.
   - SNES: CGRAM order.
 
@@ -698,11 +707,12 @@ report. Layout under the entry file's directory: `out/<console>/<tier>/…`. Eve
 
 | File | Bytes | Layout |
 |---|---|---|
-| `nes/<scene>.chr` | 16 per tile; padded to 4 KiB per pattern table (`--chr-pad 8k` for a full NROM CHR-ROM) | Plane 0 rows 0-7, then plane 1 rows 0-7. Bit 7 = leftmost pixel. Index = `p0 \| p1<<1`. BG table first, then the sprite table (split budget model, §8 Q5) |
+| `nes/<scene>.chr` | 8 KiB: pattern table `$0000` then `$1000` (a full NROM CHR-ROM), 16 bytes per tile | Plane 0 rows 0-7, then plane 1 rows 0-7. Bit 7 = leftmost pixel. Index = `p0 \| p1<<1`. BG table first, then the sprite table (split budget model, §8 Q5) |
 | `nes/<scene>.pal` | 32 | `$3F00-$3F1F` image: `[bd, b0.1, b0.2, b0.3, bd, b1.1, …, bd, s0.1, s0.2, s0.3, bd, s1.1, …]`. `$3F10/14/18/1C` are written equal to `$3F00/04/08/0C` (mirrors), and unused entry-0 slots hold the backdrop. **No byte is ever `$0D`.** Black is `$0F`, white `$30`, unless pinned |
 | `nes/<scene>.nam` | 1024 | 960 tile indices, row-major 32×30, then 64 attribute bytes `(BR<<6)\|(BL<<4)\|(TR<<2)\|TL`. Fields for non-existent rows 30-31 are 0 |
 | `nes/<scene>.oam` | 256 | 64 × `[top−1, tile, attr, X]`, with `attr = pal \| prio<<5 \| H<<6 \| V<<7`. In 8×16 mode `tile = (top_tile & $FE) \| table`. Unused entries have `Y = $FF` |
-| `nes/<asset>.ms.s` | text | metasprite table: `x, y, tile, attr` per cell, terminated by `$80` (neslib-style; see §8 Q6) |
+| `nes/<scene>.ms.s` | text | metasprite tables, one per (asset, frame) placed in the scene: `x, y, tile, attr` per cell, terminated by `$80` (neslib-style; see §8 Q6) |
+| `nes/<scene>.rom.json`, `nes/<scene>.ref.png` | text, PNG | *M1:* PPU settings for the viewer ROM, and the reference-PPU render of the bytes (what the console must show) |
 | `nes/<scene>.s`, `.h` | text | ca65 include (`.segment "RODATA"`, labels, `.incbin`) and a cc65 C header with `extern const unsigned char …[]` |
 
 ### 4.4 SNES (legal tier)
@@ -766,7 +776,7 @@ scene in `examples/codemode/` and `src/tests/fixtures/codemode/proof/`.
 | Tool | Role | License | Pin |
 |---|---|---|---|
 | **cc65** suite: `ca65` + `ld65` | assembles and links both ROMs (6502 for NES; 65816 via `.p816` for SNES) | zlib | exact version in `proof/TOOLS.md`; ROM sha256 goldens are per pinned toolchain |
-| **Mesen 2** | NES + SNES emulator in headless `--testRunner` mode. Lua: `emu.takeScreenshot()` (PNG string), `emu.read(addr, emu.memType.nesPaletteRam \| nesSpriteRam \| nesPpuMemory \| snesCgRam \| snesSpriteRam \| snesVideoRam)`, `emu.stop(exitCode)` sets the process exit code | GPL-3.0 (test tool only: not linked or shipped) | release version + sha256 in `proof/TOOLS.md`. The Linux build needs the .NET runtime and SDL2. Exact CLI flags (for example `--timeout`, IO access for Lua file writes) are pinned there and verified against that version |
+| **Mesen 2** | NES + SNES emulator in headless `--testRunner` mode (*M1:* built from source at commit `b9fa69dd`, the archived 2.1.1; pinned by commit because its .NET bundle is not bit-reproducible; see `proof/TOOLS.md`). Lua: `emu.takeScreenshot()` (PNG string), `emu.read(addr, emu.memType.nesPaletteRam \| nesSpriteRam \| nesPpuMemory \| snesCgRam \| snesSpriteRam \| snesVideoRam)`, `emu.stop(exitCode)` sets the process exit code | GPL-3.0 (test tool only: not linked or shipped) | release version + sha256 in `proof/TOOLS.md`. The Linux build needs the .NET runtime and SDL2. Exact CLI flags (for example `--timeout`, IO access for Lua file writes) are pinned there and verified against that version |
 | **SuperFamiconv** | independent oracle for the SNES 4bpp tile encoder (byte-compare on a fixture with pinned palette) | MIT | version + sha256 |
 | Real hardware (optional) | NES / SNES plus a flash cart, CRT photo | — | manual sign-off checklist (§8 Q9) |
 

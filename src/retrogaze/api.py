@@ -154,6 +154,7 @@ from starlette.requests import Request as StarletteRequest
 from .pipeline import run_pipeline, run_pipeline_best_of_n
 from .palette import _NES_PALETTE_HEX, find_nearest_nes_color
 from .mcp_routes import router as mcp_router, limiter as mcp_limiter
+from .codemode_routes import router as codemode_router
 from .auth import AuthenticatedUser, get_current_user, get_optional_user
 from .cost_model import model_path_and_cost
 from .supabase_client import supabase_configured
@@ -251,6 +252,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Mount MCP server product API
 app.include_router(mcp_router, prefix="/mcp", tags=["mcp"])
+# Code mode (code-drawn art): off unless RETROGAZE_CODE_MODE=1, refused on the demo; not in /v1.
+app.include_router(codemode_router, prefix="/code", tags=["code"])
 
 # Routers mounted above, as (mount prefix, router) pairs. FastAPI >= 0.139 keeps
 # an included router nested behind an internal `_IncludedRouter` object instead
@@ -258,12 +261,12 @@ app.include_router(mcp_router, prefix="/mcp", tags=["mcp"])
 # (bottom of this file) consults this table to confirm a mounted endpoint exists
 # rather than reaching into FastAPI internals. Purely a lookup aid — it grants
 # nothing: only paths named in _V1_ALLOWLIST are ever exposed.
-_MOUNTED_ROUTERS: tuple[tuple[str, APIRouter], ...] = (("/mcp", mcp_router),)
+_MOUNTED_ROUTERS: tuple[tuple[str, APIRouter], ...] = (("/mcp", mcp_router), ("/code", codemode_router))
 
 _enable_hsts = os.environ.get("ENABLE_HSTS", "").strip() == "1"
 _API_PATH_PREFIXES = ("/generate", "/config", "/history", "/usage", "/settings",
                        "/checkout", "/webhooks", "/subscription", "/billing-portal",
-                       "/waitlist", "/admin", "/api-keys", "/mcp", "/v1")
+                       "/waitlist", "/admin", "/api-keys", "/mcp", "/code", "/v1")
 
 
 # ---------------------------------------------------------------------------

@@ -25,7 +25,7 @@ const BANNER = `
  |_| \\_\\___|\\__|_|  \\___/ \\__, |\\__,_/___\\___|
                           |___/
   MCP Server v${VERSION} — Classic Console Pixel Art Intelligence
-  7 consoles + Game Boy Pocket (beta) | 6 tools | open source
+  7 consoles + Game Boy Pocket (beta) | 9 tools | open source
 `;
 
 // Handle --version and --help flags
@@ -70,7 +70,9 @@ const server = new McpServer(
       "Use retro_fix_sprite to auto-correct violations. " +
       "Supports 7 consoles plus Game Boy Pocket (beta, gb_pocket): NES, Game Boy (DMG), Game Boy Color, " +
       "C64, Genesis/Mega Drive, SNES, and PC Engine. " +
-      "Pass console parameter to any tool (default: nes).",
+      "Pass console parameter to any tool (default: nes). " +
+      "Code mode (retro_code_bind, retro_code_build, retro_code_verify) draws art as pxl .px.js code, " +
+      "checks it against real NES hardware and exports console bytes with code-drawn provenance.",
     capabilities: {
       tools: {},
     },
@@ -87,7 +89,7 @@ try {
   process.exit(1);
 }
 
-// Register all 6 tools
+// Register all 9 tools
 registerTools(server, client);
 
 // Graceful shutdown
