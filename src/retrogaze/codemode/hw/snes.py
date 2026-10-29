@@ -857,18 +857,20 @@ class SceneAnalyzer:
         return out
 
     def cost(self, objs_by_state) -> tuple:
-        bad = n = tiles = range_over = time_over = 0
+        bad = unplaceable = n = tiles = range_over = time_over = 0
         for objs in objs_by_state:
             vis = [o for o in objs if self.visible(o)]
             bad += sum(1 for o in vis if len(o.colors) > 15)
+            unplaceable += sum(1 for o in vis if o.top < 0 or o.top + o.h > 256 or o.x == -256)
             n = max(n, len(vis))
             tiles += sum(o.w * o.h // 64 for o in vis)
             for y in range(H):
                 on = [o for o in vis if o.top <= y < o.top + o.h]
                 range_over += max(0, len(on) - PER_LINE)
                 time_over += max(0, sum(on_screen_slivers(o.x, o.w) for o in on[:PER_LINE]) - SLIVERS)
-        # hard limits first, then fewer OBJs (OAM slots, per-line range), then fewer tiles (VRAM, slivers)
-        return (bad, max(0, n - MAX_OBJ), range_over, time_over, max(0, tiles - OBJ_TILES), n, tiles)
+        # hard limits first (SNES-H3, H4, H9-H11, H13), then fewer OBJs (OAM slots, per-line range), then fewer
+        # tiles (VRAM, slivers)
+        return (bad, unplaceable, max(0, n - MAX_OBJ), range_over, time_over, max(0, tiles - OBJ_TILES), n, tiles)
 
     @staticmethod
     def visible(o: Obj) -> bool:

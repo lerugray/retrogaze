@@ -1,7 +1,9 @@
 # Retrogaze Code Mode: spec
 
 **Status:** approved for build (§8 decided 2026-10-29). **M1 (NES console-legal) is implemented** on branch
-`claude/happy-bardeen-i9nsun`; this spec records the decisions the build made (marked *M1:*).
+`claude/happy-bardeen-i9nsun`; this spec records the decisions the build made (marked *M1:*). **M1.1 (MMC1 + CHR-RAM,
+8x16 and flip proof scenes) and M2 (SNES console-legal, mode 1) are implemented** on branch `gs/code-mode-m2`
+(decisions marked *M1.1:* and *M2:*).
 **Base:** `main` at `5276809`. **Date:** 2026-10-29.
 **Owner:** Ray Weiss. **First consoles at full legality:** NES and SNES (Ray's pick).
 
@@ -288,6 +290,36 @@ binding therefore hands out `snes(r5, g5, b5)` and never asks the artist to type
 
 Animations follow the NES rules in §2.2: palettes fixed per scene, CHR union by default, `chr: "per-frame"` opt-in.
 
+*M2:* decisions the build made inside these rules (every one pinned by a fixture or the emulator):
+
+- **Layers.** `rg.scene({ bg1, bg2, bg3 })` names one asset per layer, drawn at the screen origin on one 32×32
+  tilemap (an image up to 256×256; rows 224-255 are encoded but not shown). Back to front: backdrop, BG3, BG2, BG1,
+  OBJ: every BG tilemap entry has priority 0 and every OBJ priority 3. SNES-H15 also covers unknown assets and
+  malformed placements (the NES build uses NES-H13 for those).
+- **SNES-H2** fails for a placement `size` that is no OBJ size at all (`"8x16"`, `"24x24"`) and for `obj:<n>`
+  layers combined with post-processing. Requesting an undocumented size without `allowUndocumentedObjSizes` is
+  SNES-H8.
+- **SNES-H4** fails for an OBJ that shows pixels but cannot be encoded: an X of −256, or rows outside 0-255
+  (straddling the top edge, or `top + height > 256`, both wrap to the top of the screen on hardware). OBJs that
+  show no pixel at all are dropped and reported as info, as on NES.
+- **SNES-H5** fails for a backdrop that is no 15-bit color (a word above `$7FFF`) or one that contradicts a pinned
+  16-entry BG palette 0. An undeclared backdrop is black.
+- **SNES-H6.** BG3 palette *q* uses CGRAM 4*q*+1..4*q*+3, which are three slots of 4bpp palette ⌊*q*/4⌋. The
+  solver first tries BG1/BG2 in palettes 2-7 and BG3 alone in CGRAM 0-31; if that fails it solves the joint
+  problem exactly as a MILP (`hw/snes.py:_joint_milp`): BG3 colors in a 4bpp palette's BG3 slots count toward its
+  15 and are usable by 4bpp tiles. The unsat core is minimal up to 48 sets.
+- **SNES-H10 / H11 (pinned by the proof, §5.4).** Per line the PPU keeps the first 32 OBJs in range in OAM order
+  (from OAM #0; priority rotation off), so range over drops the highest indices. It then fetches the kept OBJs'
+  tiles from the last kept one back to OAM #0, left to right on screen, and only tiles that reach the screen
+  (an OBJ at X = −12, 16 wide, costs 1 sliver; at X = 250, 1). After 34 the rest are dropped: time over costs the
+  frontmost OBJs (lowest OAM index) their right-hand slivers. The report names each dropped OBJ or sliver and the
+  lines.
+- **SNES-H12** counts the CHR of all frames (union) per layer; **SNES-H13** places each unique OBJ block (dedup with
+  H/V flips; V flips only for square OBJs, because the hardware flips the halves of 16×32 / 32×64 OBJs separately)
+  aligned to its own size on the two 16×16-tile name tables, largest first; **SNES-H14** uses first fit by
+  alignment (OBJ base 16 KiB with the second table right after it, BG CHR 8 KiB, maps 2 KiB) and prints the map in
+  `vram.json`.
+
 ### 2.4 The other six systems (M3, console-like only)
 
 The six are Game Boy DMG, Game Boy Pocket, Game Boy Color, Genesis / Mega Drive, Commodore 64 (hires and multicolor
@@ -378,6 +410,13 @@ This uses only pxl's public library surface (`Project`, `Palette`, `Trace`, `pac
 | any `#rgba` / `#rrggbbaa` with α ∉ {00, ff} | partial alpha has no hardware meaning | `CM-STRICT-ALPHA` |
 | `pal({...})` and op color args that are hex | hex must be a console color (NES table, or SNES `e(q)` values) | `CM-STRICT-COLOR` (hint names the nearest legal color and the `nes()`/`snes()` call) |
 | `use(name)` for built-in palettes | off-console colors | `CM-STRICT-USE` |
+
+*M2 (SNES binding):* `snes(r5, g5, b5)` takes three integers 0-31 and `bgr555(word)` a word `0x0000-0x7FFF`
+(`CM-SNES-RANGE` otherwise); both return the canonical hex. A hex literal passes the strict check when every channel
+is some `e(q)`; the hint for one that is not names the per-channel nearest legal color, e.g.
+`#848484` → `nearest legal color: #838383 = snes(16,16,16)`. `rg.colors` is all 32 768 colors, `rg.area` is 8
+(the palette is per 8×8 tile) and the active palette starts empty. The globals are the NES set with `nes` replaced
+by `snes` and `bgr555` (reviewed by a test, as M1-04).
 
 Everything else in the DSL is allowed and stays inside the palette: `shade`/`light` along `ramps`, `grad`, `dither`,
 `noise`, `outline`, `mx`/`my`, `swap`, `stamp`, `tile`, `pattern`, `tilemap`, `scatter`, `text`, `anim`, `frame`, and
@@ -489,6 +528,12 @@ profile, the test says to delete the matching diff entry.
 - **SNES OBJ:**
   - The asset is tiled greedily with the large OBSEL size, then the small size, skipping transparent blocks.
   - The search covers both sizes of each candidate OBSEL pair, and the cheapest feasible pair wins.
+  - *M2:* a large OBJ is used where at least half of its small sub-cells hold pixels and it has ≤ 15 colors, else
+    its non-empty small sub-cells. The grid is anchored at the asset origin or at the opaque bounding box,
+    whichever needs fewer over-15-color OBJs, OBJs and tiles. "Cheapest" is, in order: OBJs over 15 colors, OBJs that
+    cannot be placed (SNES-H4: a large OBJ near the bottom edge would run past line 255), the excess over 128 OBJs, range and time overflows, the excess over 512 tiles, then **fewer OBJs**, then fewer
+    tiles, then the lower OBSEL number (so a 32×32 hero is one 32×32 OBJ, not sixteen 8×8). `obsel: n` pins the
+    pair; a placement `{ size: "WxH" }` forces that size for it.
 - **OAM order:** the last-painted object gets the lowest OAM index, which is the highest priority.
 
 #### 3.4.2 Palette packing (NES-H6/H7, SNES-H6/H7)
@@ -728,6 +773,15 @@ report. Layout under the entry file's directory: `out/<console>/<tier>/…`. Eve
 | `snes/<scene>.vram.json` | text | allocator map: base addresses, sizes, register values (`BG1SC`, `BG12NBA`, `OBSEL`) |
 | `snes/<scene>.s`, `.h` | text | ca65 include and C header (format per §8 Q6) |
 
+*M2:* also `snes/<scene>.ref.png` (the reference-PPU render of the bytes) and `png/<scene>.screen.idx.png` (indexed,
+`PLTE` in CGRAM order). Unused OAM entries are parked at **Y = 224, X = −128** (small size): out of range on every
+visible line, never X = −256 (pinned by the proof). `vram.json` has `regions` (byte and word address, size), the
+register values (`BGMODE`, `TM`, `BGnSC`, `BG12NBA`, `BG34NBA`, `OBSEL`, `BGnHOFS = 0`, `BGnVOFS = $3FF`) and the
+file names. BG vertical scroll is −1 because the first visible line is scanline 1 and a BG shows line scanline +
+VOFS; an OBJ's Y byte is its top screen row. Animated scenes add `snes/<scene>_s<k>.<layer>.map` / `_s<k>.oam` per
+state and, with `chr: "per-frame"`, `snes/<scene>_c<k>.*` CHR sets. `snes/pal/<scene>.bg<p>.pal` / `.obj<p>.pal`
+are the 32-byte slices of the palettes in use.
+
 ### 4.5 Golden bytes (exact; the acceptance tests quote them)
 
 - **NESdev "½" example tile**. Rows: `.1.....3` `11....3.` `.1...3..` `.1..3...` `...3.22.` `..3....2` `.3....2.`
@@ -809,6 +863,11 @@ example, and the proof job runs it next to the NROM scenes, plus 8x8 and 8x16 fl
 3. sets `BGMODE = $01`, `BG1SC`, `BG12NBA` and `OBSEL` from `vram.json`, and `TM = $11` (BG1 + OBJ);
 4. sets `INIDISP = $0F`, then loops.
 
+*M2:* as built, `proof/snes/viewer.s` (LoROM, 128 KiB, `proof/snes/lorom.cfg`, built by `proof/build_snes_rom.py`)
+also clears all of VRAM first, writes `BG2SC`, `BG3SC`, `BG34NBA` and the scroll registers from `vram.json`, and sets
+`TM` to the layers in use plus OBJ; gate (c) then compares the whole 64 KiB of VRAM. Details and results:
+`proof/TOOLS.md`.
+
 **`proof/run_mesen.lua`** waits N frames (default 10). It then takes a screenshot and dumps palette RAM / CGRAM, OAM,
 and the relevant PPU memory / VRAM ranges to the job directory, and calls `emu.stop(0)`. Any Lua error calls
 `emu.stop(1)`.
@@ -828,6 +887,13 @@ The validator must also be right about what fails:
 
 Rules that cannot be expressed in bytes at all (for example 4 colors in a NES area) are covered differently: the
 **encoder must refuse with the same rule ID** the validator gave.
+
+*M2:* `snes_33_on_a_line` is `src/tests/fixtures/codemode/snes/snes_H10_fail.px.js` (33 OBJs on lines 100-107;
+OAM #32 is dropped) and `snes_35_slivers` is `snes_H11_fail.px.js` (17 16×16 OBJs on screen plus one at X = −12:
+35 slivers; the right sliver of OAM #0 is dropped). A legal `snes_34_slivers` (`snes_H11_pass.px.js`: straddlers at
+X = −12 and X = 250) runs too. Besides the gates, the proof renders wrong variants of the reference PPU (no range
+limit, no time limit, off-screen left tiles fetched) and requires Mesen to disagree with each on exactly the pixels
+the variant changes; all three agree with the model in §2.3 (*M2* notes), so M2-08 needed no change.
 
 ### 5.5 CI
 
@@ -933,6 +999,11 @@ produces an `.nes` file that boots in Mesen 2 showing the art; and M1-01…M1-29
 **Done when:** `build … --console snes --tier legal` exits 0, `rom` produces an `.sfc` that boots in Mesen 2 showing
 the art, and M2-01…M2-16 are green.
 
+*M2:* the tests live in new files so the M1 test files stay byte-identical: M2-01 `test_codemode_binding_snes.py::
+test_snes_colors`, M2-11/12 `test_codemode_roundtrip_snes.py`, M2-03..06 `test_codemode_encode_snes.py`, M2-02/07/08/09
+`test_codemode_rules_snes.py`, M2-10 `test_codemode_vram.py`; M2-13..15 run in `proof/run_codemode_proof.py`. The art
+is `examples/codemode/snes/` (a subfolder, because the M1 tests treat every `examples/codemode/*.px.js` as NES).
+
 ### M3: the other six systems at console-like
 
 | ID | Test | Asserts |
@@ -987,13 +1058,18 @@ Each question has a recommended answer. The build proceeds on the recommendation
 | **Q2** | **Are raster references allowed while authoring?** For example, an agent shown a FLUX image or a photo as reference while writing the code. | **No raster inputs to the tool, ever** (I1). Policy on what a person or agent *looks at* is Ray's. The recommendation: for paid-release art, the skill tells agents not to use AI-generated images as reference. |
 | **Q3** | **How should non-code outputs be classified?** Do Aseprite-mode sprites (an LLM issuing drawing commands, no rebuildable source) count as code-drawn? Should FLUX and Aseprite outputs get their own provenance stamp so `audit` can classify them positively? | **Aseprite outputs do not count** (no source to verify). **Stamp the other modes later**, in a separate small PR after M1 (it touches existing modes, so it is out of scope here). Until then `audit` treats "no code-mode provenance" as "not cleared for paid release". |
 | **Q4** | **Where may code mode run?** It executes user-supplied JS. | **Local first:** CLI, the local MCP server, and the API on localhost with `RETROGAZE_CODE_MODE=1`. **The public demo refuses it (403)** until it runs in an OS-isolated worker (no network, read-only, unprivileged). The web UI comes after M2. |
-| **Q5** | **Which NES cartridge model is the default budget?** This sets NES-H11 and NES-H12. | **NROM, 8 KiB CHR-ROM, split 256 BG / 256 sprite tiles.** Allow a per-scene `chr: { model: "nrom-split" \| "shared" \| "chr-ram" }` override. If Ray's current NES project uses another mapper, that mapper becomes the example's default. *M1.1:* Ray's project is MMC1 + 8 KiB CHR-RAM; `examples/codemode/nes_mmc1.px.js` uses `chr: "chr-ram"` and boots on the MMC1 viewer (§5.3). NROM stays the spec default. |
+| **Q5** | **Which NES cartridge model is the default budget?** This sets NES-H11 and NES-H12. | **NROM, 8 KiB CHR-ROM, split 256 BG / 256 sprite tiles.** Allow a per-scene `chr: { model: "nrom-split" \| "shared" \| "chr-ram" }` override. If Ray's current NES project uses another mapper, that mapper becomes the example's default. |
 | **Q6** | **Which homebrew toolchain should the include files target?** | **ca65 `.s` + cc65 `.h` on both consoles**, plus **neslib-style metasprites** for NES. Raw binaries always ship, so asm6, NESASM, WLA-DX or PVSnesLib users can `.incbin` them. Whatever toolchain Ray's projects use becomes the primary target. |
 | **Q7** | **Allow the SNES's undocumented OBJ sizes (OBSEL 6-7: 16×32 / 32×64)?** | **Off by default.** Opt in per scene with `allowUndocumentedObjSizes`. The SNES development manual didn't document them. |
 | **Q8** | **Should "legal" ever include sprite flicker or multiplexing**, to beat 8 per line (NES) or 32 / 34 (SNES)? | **No.** Legal = a stable single frame. A later, separate "legal-with-flicker" report can plan OAM cycling, but it is never the default verdict. |
 | **Q9** | **Should each milestone have a real-hardware sign-off step?** For example a flash cart on a real NES / SNES, with a CRT photo in the release notes. | **Yes, if the hardware is on hand:** a manual checklist item at M1 and M2 closes. The emulator CI job stays the automatic gate. |
 | **Q10** | **Upstream relationship with claude-pxl (crsolver)?** | **After M1 works, open one courteous upstream issue** describing the integration. Offer a "palette-lock / strict colors" hook upstream so the Retrogaze wrappers could shrink. Nothing in M1-M3 depends on upstream accepting it. Code mode stays on the vendored pin either way. |
 | **Q11** | **Fix the existing engine's hardware inaccuracies** found in §3.3? (SNES 34 slivers = 272 px vs 256; NES / SNES per-tile caps counting 4 / 16 opaque; NES black reported as `$0D`; SNES OBJ sizes without the OBSEL rule; NES attribute reduction applied to sprites.) | **Yes, in a separate PR after M2.** Each fix gets its own new test. Any existing test that asserts the old value (for example `tests/test_palette.py:127-129` accepting `$0D`) is changed only with Ray's explicit OK. Code mode does not depend on these fixes. |
+
+*Notes on the decisions above (the answers are unchanged):* *M1.1:* Ray's project is MMC1 + 8 KiB CHR-RAM, so per
+Q5 `examples/codemode/nes_mmc1.px.js` uses `chr: "chr-ram"` and boots on the MMC1 viewer (§5.3); NROM stays the spec
+default. *M2:* Q7 holds (16×32 / 32×64 only with `allowUndocumentedObjSizes`) and Q8 holds (SNES-H10/H11 are
+violations, never planned flicker). The Q10 note is drafted in `docs/spec/UPSTREAM-ISSUE-DRAFT.md`, not posted.
 
 ---
 

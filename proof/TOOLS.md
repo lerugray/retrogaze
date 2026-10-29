@@ -20,6 +20,7 @@ here was read from the source at the pinned commit and then confirmed by experim
 | `build_snes_rom.py --in-dir D --name N --out X.sfc` | M2: validates `N.vram.json` and the files it names, writes `scene.inc`, runs ca65 + ld65, writes the header checksum, prints the sha256 |
 | `sfc_oracle.py` | M2-15: re-encodes a BG layer's tiles with SuperFamiconv from the art's own pixels and compares with the exported `.4bpp` |
 | `tools/build_superfamiconv.sh <src-dir> <prefix>` | builds SuperFamiconv from source at the pinned commit into `<prefix>/bin/superfamiconv` (idempotent) |
+| `fuzz_snes.py --mesen BIN --work-dir W [--seeds 0-24]` | M2: random SNES scenes (layers, palettes, OBJ sizes, flips, edge straddlers, crowded lines) through validator, bytes, LoROM and Mesen; legal ones must pass gates (b)-(d), runtime-limit ones must drop exactly the predicted pixels |
 | `make_selftest.py --out-dir D` | hand-built scenes in the exporter contract, with their own reference renderer |
 | `run_selftest.py --mesen BIN --work-dir W` | end-to-end self-test: build ×2 → Mesen → compare, plus the empirical checks |
 
@@ -323,3 +324,11 @@ bug cannot cancel out. `snes_proof`: 72 of 72 tiles equal, palettes 0-2.
 
 Each SNES ROM is built twice (identical bytes) and its header is checked (map mode `$20`, 128 KiB, valid checksum).
 One SNES scene takes about 1.2 s in Mesen here.
+
+### Fuzzing (`fuzz_snes.py`)
+
+Seeds 0-79 here: 70 scenes ran in Mesen (60 legal, 10 with SNES-H10/H11 overflows built with `--force`), 0
+disagreements; 10 seeds were genuinely illegal (VRAM over budget, three forced OBJ sizes) and were skipped. An
+earlier run found one decomposer weakness (a 64x64 OBJ chosen near the bottom edge, which would wrap: SNES-H4,
+while a smaller OBSEL pair is legal); SNES-H4 is now a hard limit in the pair search
+(`test_codemode_rules_snes.py::test_pair_choice_avoids_unplaceable_objs`). CI runs seeds 0-24 (about 40 s).

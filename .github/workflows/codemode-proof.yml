@@ -90,6 +90,9 @@ jobs:
           python proof/run_codemode_proof.py --mesen ~/mesen2/bin/Mesen \
             --superfamiconv ~/superfamiconv/bin/superfamiconv --work-dir "$RUNNER_TEMP/proof-codemode"
 
+      - name: SNES fuzz (random scenes through validator, bytes, LoROM and Mesen; fixed seeds)
+        run: python proof/fuzz_snes.py --mesen ~/mesen2/bin/Mesen --work-dir "$RUNNER_TEMP/proof-fuzz" --seeds 0-24
+
       - name: MCP end-to-end (retro_code_bind / build / verify)
         run: |
           cd mcp-server
@@ -105,3 +108,4 @@ jobs:
           path: |
             ${{ runner.temp }}/proof-selftest
             ${{ runner.temp }}/proof-codemode
+            ${{ runner.temp }}/proof-fuzz

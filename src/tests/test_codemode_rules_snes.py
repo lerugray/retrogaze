@@ -152,3 +152,14 @@ def test_bg3_packs_jointly_with_4bpp(bg_tiles, hud, legal):
     shared = m.bg_slots[q // 4][4 * (q % 4):4 * (q % 4) + 3]
     hud_colors = set(m.layer_tile_colors("bg3", 0, 100 // 8, 0))
     assert hud_colors <= {c for c in shared if c is not None}
+
+
+def test_pair_choice_avoids_unplaceable_objs():
+    """Found by proof/fuzz_snes.py: the fewest-OBJs pair put a 64x64 OBJ on a 48x32 sprite near the bottom edge,
+    which runs past line 255 (SNES-H4) although a smaller pair is legal. SNES-H4 is a hard limit in the search."""
+    src = ('pal({ r: snes(31, 8, 0), y: snes(31, 28, 4) })\n'
+           'sprite("wide", { w: 48, h: 32 }, rect(0, 0, 48, 32, "r"), rect(4, 4, 40, 8, "y"))\n'
+           'rg.scene("x", { obj: [["wide", 100, 210]] })\n')
+    r = build_source(src)
+    assert r.verdict == "legal", violations(r.report)
+    assert all(o.top + o.h <= 256 for o in scene(r, "x").oam[0])
