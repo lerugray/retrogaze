@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Run one NES ROM headless in Mesen 2 (--testRunner) and dump what the PPU holds.
+"""Run one NES or SNES ROM headless in Mesen 2 (--testRunner) and dump what the PPU holds.
 
-    run_mesen.py --mesen <binary> --rom X.nes --out-dir O [--frames 10] [--timeout 60] [--keep-home]
+    run_mesen.py --mesen <binary> --rom X.nes|X.sfc --out-dir O [--frames 10] [--timeout 60] [--keep-home]
 
-Writes O/screenshot.png, O/palette.bin (32 B), O/oam.bin (256 B), O/nametable.bin (1024 B),
-O/chr.bin (8192 B) and O/run_info.txt via run_mesen.lua. Exits non-zero on any failure or timeout.
+Writes O/screenshot.png and O/run_info.txt via run_mesen.lua, plus for a .nes ROM O/palette.bin (32 B),
+O/oam.bin (256 B), O/nametable.bin (1024 B), O/chr.bin (8192 B), and for a .sfc ROM O/cgram.bin (512 B),
+O/oam.bin (544 B), O/vram.bin (65536 B). Exits non-zero on any failure or timeout.
 Mesen runs with a throwaway home (HOME / XDG_CONFIG_HOME in a temp dir, pre-seeded settings.json,
 nothing saved), so no global state is read or written. Standard library only.
 """
@@ -20,7 +21,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 LUA = HERE / "run_mesen.lua"
 DUMPS = {"palette.bin": 32, "oam.bin": 256, "nametable.bin": 1024, "chr.bin": 8192}
-OUTPUTS = ["screenshot.png", "run_info.txt", "lua_error.txt", *DUMPS]
+SNES_DUMPS = {"cgram.bin": 512, "oam.bin": 544, "vram.bin": 65536}
+OUTPUTS = ["screenshot.png", "run_info.txt", "lua_error.txt", *DUMPS, *SNES_DUMPS]
 
 # Every switch below was checked against the pinned Mesen 2 source (see TOOLS.md). A switch is
 # "--<Config property path>=<value>" resolved by ConfigManager.ProcessSwitch; unknown names are
@@ -38,13 +40,23 @@ SWITCHES = [
     "--video.videoFilter=None", "--video.screenRotation=None", "--video.scanlineIntensity=0",
     "--video.brightness=0", "--video.contrast=0", "--video.hue=0", "--video.saturation=0",
 ]
+# SNES: pinned the same way (UI/Config/SnesConfig.cs at the pinned commit). Overscan top 7 / bottom 8 is the
+# default and crops Mesen's 239-line buffer to the 224 visible lines (screen row r = scanline r + 1).
+SNES_SWITCHES = [
+    "--snes.region=Ntsc", "--snes.ramPowerOnState=AllZeros", "--snes.enableRandomPowerOnState=false",
+    "--snes.overscan.top=7", "--snes.overscan.bottom=8", "--snes.overscan.left=0", "--snes.overscan.right=0",
+    "--snes.forceFixedResolution=false", "--snes.blendHighResolutionModes=false",
+    "--snes.hideBgLayer1=false", "--snes.hideBgLayer2=false", "--snes.hideBgLayer3=false",
+    "--snes.hideBgLayer4=false", "--snes.hideSprites=false",
+    "--snes.ppuExtraScanlinesBeforeNmi=0", "--snes.ppuExtraScanlinesAfterNmi=0",
+]
 
 
 class MesenError(RuntimeError):
     pass
 
 
-def make_env(home: Path, out_dir: Path, frames: int) -> dict:
+def make_env(home: Path, out_dir: Path, frames: int, console: str = "nes") -> dict:
     env = {
         "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         "LANG": "C.UTF-8",
@@ -59,6 +71,7 @@ def make_env(home: Path, out_dir: Path, frames: int) -> dict:
         "SDL_AUDIODRIVER": "dummy",
         "RG_OUT_DIR": str(out_dir),
         "RG_FRAMES": str(frames),
+        "RG_CONSOLE": console,
     }
     for key in ("DOTNET_ROOT", "DOTNET_ROOT_X64"):  # framework-dependent build: find the runtime
         if key in os.environ:
@@ -69,6 +82,8 @@ def make_env(home: Path, out_dir: Path, frames: int) -> dict:
 def run(mesen, rom, out_dir, frames=10, timeout=60, keep_home=False) -> dict:
     """Run Mesen; return {"seconds", "info", "home"}. Raises MesenError on any failure."""
     mesen, rom, out_dir = Path(mesen).resolve(), Path(rom).resolve(), Path(out_dir).resolve()
+    console = "snes" if rom.suffix.lower() in (".sfc", ".smc") else "nes"
+    dumps = SNES_DUMPS if console == "snes" else DUMPS
     if not os.access(mesen, os.X_OK):
         raise MesenError(f"not an executable: {mesen}")
     if (mesen.parent / "settings.json").exists():
@@ -87,10 +102,10 @@ def run(mesen, rom, out_dir, frames=10, timeout=60, keep_home=False) -> dict:
         # Without settings.json Mesen opens its first-run wizard (a GUI) even with --testRunner.
         (mesen_home / "settings.json").write_text("{}\n", encoding="utf-8")
         cmd = [str(mesen), "--testRunner", f"--timeout={timeout}", "--doNotSaveSettings",
-               *SWITCHES, str(LUA), str(rom)]
+               *SWITCHES, *(SNES_SWITCHES if console == "snes" else []), str(LUA), str(rom)]
         start = time.monotonic()
         try:
-            proc = subprocess.run(cmd, env=make_env(home, out_dir, frames), cwd=home,
+            proc = subprocess.run(cmd, env=make_env(home, out_dir, frames, console), cwd=home,
                                   capture_output=True, text=True, timeout=timeout + 30)
         except subprocess.TimeoutExpired:
             raise MesenError(f"Mesen did not exit within {timeout + 30} s")
@@ -102,7 +117,7 @@ def run(mesen, rom, out_dir, frames=10, timeout=60, keep_home=False) -> dict:
         if proc.returncode != 0:
             hint = " (255 = Mesen --timeout reached or ROM not loaded)" if proc.returncode == 255 else ""
             raise MesenError(f"Mesen exited with {proc.returncode}{hint}" + (f"\n{log[-2000:]}" if log else ""))
-        for name, size in DUMPS.items():
+        for name, size in dumps.items():
             path = out_dir / name
             if not path.is_file() or path.stat().st_size != size:
                 raise MesenError(f"{path}: missing or not {size} bytes")

@@ -1,9 +1,10 @@
 name: Code mode proof
 
 # Proof of legality for code mode (docs/spec/CODE-MODE-SPEC.md §5): code-drawn scenes are exported,
-# built into NES viewer ROMs with cc65, run headless in Mesen 2, and compared byte for byte (palette RAM,
-# OAM, nametable, CHR) and pixel for pixel (screenshot vs the reference PPU, by color bijection).
-# Also runs the MCP end-to-end check of the retro_code_* tools.
+# built into NES viewer ROMs (NROM and MMC1 + CHR-RAM) and SNES LoROM viewer ROMs with cc65, run headless in
+# Mesen 2, and compared byte for byte (NES: palette RAM, OAM, nametable, CHR; SNES: CGRAM, OAM, all of VRAM)
+# and pixel for pixel (screenshot vs the reference PPU, by color bijection). SuperFamiconv re-encodes the SNES
+# proof tile set from the art as an independent oracle. Also runs the MCP end-to-end checks.
 
 on:
   push:
@@ -65,6 +66,17 @@ jobs:
           sudo apt-get install -y clang libsdl2-dev zip make
           proof/tools/build_mesen2.sh "$RUNNER_TEMP/mesen2-src" ~/mesen2
 
+      - name: Cache SuperFamiconv build
+        id: sfc-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/superfamiconv
+          key: superfamiconv-${{ runner.os }}-fda06602e62ba04391eca488ae4f2697916907d5-${{ hashFiles('proof/tools/build_superfamiconv.sh') }}
+
+      - name: Build SuperFamiconv from the pinned commit (v0.9.2)
+        if: steps.sfc-cache.outputs.cache-hit != 'true'
+        run: proof/tools/build_superfamiconv.sh "$RUNNER_TEMP/sfc-src" ~/superfamiconv
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
@@ -73,14 +85,17 @@ jobs:
       - name: Harness self-test (hand-built scenes, independent of the exporter)
         run: python proof/run_selftest.py --mesen ~/mesen2/bin/Mesen --work-dir "$RUNNER_TEMP/proof-selftest"
 
-      - name: Code-mode proof (exported scenes, golden ROMs, negative fixture)
-        run: python proof/run_codemode_proof.py --mesen ~/mesen2/bin/Mesen --work-dir "$RUNNER_TEMP/proof-codemode"
+      - name: Code-mode proof (NES + SNES exported scenes, golden ROMs, negative fixtures and controls)
+        run: |
+          python proof/run_codemode_proof.py --mesen ~/mesen2/bin/Mesen \
+            --superfamiconv ~/superfamiconv/bin/superfamiconv --work-dir "$RUNNER_TEMP/proof-codemode"
 
       - name: MCP end-to-end (retro_code_bind / build / verify)
         run: |
           cd mcp-server
           npm ci
           PYTHON=python ./test-e2e-codemode.sh
+          PYTHON=python ./test-e2e-codemode-snes.sh
 
       - name: Upload proof runs
         if: always()

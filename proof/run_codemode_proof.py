@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Code-mode proof of legality, NES (CODE-MODE-SPEC §5, tests M1-26 and M1-27).
+"""Code-mode proof of legality, NES and SNES (CODE-MODE-SPEC §5, tests M1-26, M1-27, M2-13..15).
 
-    run_codemode_proof.py --mesen <binary> --work-dir W [--update-goldens]
+    run_codemode_proof.py --mesen <binary> --work-dir W [--superfamiconv <binary>] [--update-goldens]
 
 For every scene in SCENES: export it with Retrogaze code mode, build the viewer ROM (twice: the
 bytes must match, and match proof/goldens.json), run it in Mesen, then check
@@ -14,6 +14,10 @@ only on the sprite pixels the validator says the PPU drops.
 M1.1 scenes also check the cartridge (the iNES header of an MMC1 + CHR-RAM ROM: mapper 1, 128 KiB PRG,
 no CHR-ROM, 8 KiB CHR-RAM; Mesen's CHR dump is then the CHR-RAM the viewer filled) and, for the flip
 scenes, that the OAM really uses all four H/V flip combinations.
+SNES scenes (M2) build the LoROM viewer (proof/snes/viewer.s) and compare CGRAM, OAM and all 64 KiB of
+VRAM byte for byte (gate c) and the 256x224 screenshot (gate d); they also check the LoROM header and
+checksum. With --superfamiconv, the SNES proof scene's BG1 tiles are re-encoded by SuperFamiconv from the
+art's own pixels and must equal the exported .bg1.4bpp (M2-15); without it the run fails.
 Exit 0 only if all of it holds. Writes W/codemode_proof_summary.json.
 """
 import argparse
@@ -31,10 +35,14 @@ REPO = HERE.parent
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(HERE))
 import build_nes_rom  # noqa: E402
+import build_snes_rom  # noqa: E402
 import compare  # noqa: E402
 import run_mesen  # noqa: E402
-from retrogaze.codemode import ppu_ref  # noqa: E402
-from retrogaze.codemode.build import scene_for_rom  # noqa: E402
+import sfc_oracle  # noqa: E402
+from retrogaze.codemode import ppu_ref_snes  # noqa: E402
+from retrogaze.codemode.build import build, scene_for_rom  # noqa: E402
+from retrogaze.codemode.encode.snes import encode_scene as encode_snes  # noqa: E402
+from retrogaze.codemode.runner import read_art_dir  # noqa: E402
 
 SCENES = [
     {"id": "nes_proof", "art": "examples/codemode/nes_proof.px.js", "scene": "proof", "expect": "legal"},
@@ -49,11 +57,38 @@ SCENES = [
      "flips": True},
     {"id": "nes_flips_8x16", "art": "examples/codemode/nes_flips.px.js", "scene": "flips16", "expect": "legal",
      "flips": True},
+    # M2: SNES mode 1 (LoROM viewer)
+    {"id": "snes_proof", "console": "snes", "art": "examples/codemode/snes/snes_proof.px.js", "scene": "proof",
+     "expect": "legal", "oracle": "land"},
+    {"id": "snes_proof_tileset", "console": "snes", "art": "examples/codemode/snes/snes_proof.px.js",
+     "scene": "land", "expect": "legal"},
+    {"id": "snes_layers", "console": "snes", "art": "examples/codemode/snes/snes_layers.px.js", "scene": "layers",
+     "expect": "legal"},
+    {"id": "snes_34_slivers", "console": "snes", "art": "src/tests/fixtures/codemode/snes/snes_H11_pass.px.js",
+     "scene": "slivers", "expect": "legal", "controls": ["fetch_hidden"]},
+    {"id": "snes_33_on_a_line", "console": "snes", "art": "src/tests/fixtures/codemode/snes/snes_H10_fail.px.js",
+     "scene": "line", "expect": "SNES-H10", "controls": ["no_range_limit"]},
+    {"id": "snes_35_slivers", "console": "snes", "art": "src/tests/fixtures/codemode/snes/snes_H11_fail.px.js",
+     "scene": "slivers", "expect": "SNES-H11", "controls": ["no_time_limit", "fetch_hidden"]},
 ]
+# Negative controls (M2-14): reference-PPU variants that the emulator must disagree with, on exactly the pixels
+# where the variant differs from the hardware model. They pin the edge rules empirically.
+CONTROLS = {"no_range_limit": {"range_limit": 128}, "no_time_limit": {"time_limit": 10 ** 6},
+            "fetch_hidden": {"fetch_hidden": True}}
 # iNES header bytes 4-7 (and NES 2.0 byte 11) per viewer cartridge.
 CART_HEADERS = {"nrom": {"prg_16k": 1, "chr_8k": 1, "mapper": 0, "chr_ram": 0},
                 "mmc1": {"prg_16k": 8, "chr_8k": 0, "mapper": 1, "chr_ram": 8192}}
 GOLDENS = HERE / "goldens.json"
+
+
+def snes_header(rom: bytes) -> dict:
+    """LoROM internal header at file $7FC0: map mode, ROM size, and whether the checksum is the byte sum."""
+    h = 0x7FC0
+    comp, chk = rom[h + 0x1C] | (rom[h + 0x1D] << 8), rom[h + 0x1E] | (rom[h + 0x1F] << 8)
+    fixed = bytearray(rom)
+    fixed[h + 0x1C:h + 0x20] = bytes([0xFF, 0xFF, 0, 0])
+    return {"map_mode": rom[h + 0x15], "rom_size_kib": 1 << rom[h + 0x17], "bytes": len(rom),
+            "checksum_ok": comp ^ chk == 0xFFFF and chk == sum(fixed) & 0xFFFF}
 
 
 def predicted_drops(m) -> set:
@@ -84,7 +119,9 @@ def flip_bits(oam: bytes, used: int) -> set:
     return {oam[4 * i + 2] & 0xC0 for i in range(used)}
 
 
-def run_scene(spec, mesen: Path, work: Path, goldens: dict, update: bool) -> dict:
+def run_scene(spec, mesen: Path, work: Path, goldens: dict, update: bool, sfc: Path | None = None) -> dict:
+    if spec.get("console") == "snes":
+        return run_snes_scene(spec, mesen, work, goldens, update, sfc)
     sid = spec["id"]
     d = work / sid
     scene_dir = d / "scene"
@@ -141,14 +178,95 @@ def run_scene(spec, mesen: Path, work: Path, goldens: dict, update: bool) -> dic
     return res
 
 
+def run_snes_scene(spec, mesen: Path, work: Path, goldens: dict, update: bool, sfc: Path | None) -> dict:
+    sid = spec["id"]
+    d = work / sid
+    scene_dir = d / "scene"
+    scene_dir.mkdir(parents=True, exist_ok=True)
+    negative = spec["expect"] != "legal"
+    files, name, m = scene_for_rom(REPO / spec["art"], spec["scene"], force=negative, console="snes")
+    for fname, data in files.items():
+        (scene_dir / fname).write_bytes(data)
+    res = {"id": sid, "console": "snes", "scene": name, "art": spec["art"]}
+
+    # (a) the validator
+    errors = sorted({v.rule for v in m.violations if v.severity == "error"})
+    res["gate_a"] = (errors == []) if not negative else (errors == [spec["expect"]])
+    res["validator_errors"] = errors
+
+    # (b) reference PPU render of the exported bytes vs the art composite
+    ref = np.array(Image.open(scene_dir / f"{name}.ref.png").convert("RGBA"))
+    diff = {(int(x), int(y)) for y, x in np.argwhere((ref != m.composites[0]).any(axis=2))}
+    if negative:
+        pred = m.predicted_drops(0)
+        res["gate_b"] = bool(diff) and diff <= pred
+        res["predicted_drop_pixels"] = len(pred)
+        res["reference_vs_art_diff_pixels"] = len(diff)
+    else:
+        res["gate_b"] = not diff
+
+    # ROM, twice, deterministic and golden; LoROM header and checksum
+    rom1, rom2 = d / f"{name}.sfc", d / f"{name}.again.sfc"
+    sha1 = build_snes_rom.build(scene_dir, name, rom1)
+    sha2 = build_snes_rom.build(scene_dir, name, rom2)
+    res["rom_sha256"] = sha1
+    res["rom_deterministic"] = sha1 == sha2
+    if update:
+        goldens[sid] = sha1
+    res["rom_golden"] = goldens.get(sid) == sha1
+    res["cart"] = "lorom"
+    res["header"] = snes_header(rom1.read_bytes())
+    res["cart_ok"] = res["header"] == {"map_mode": 0x20, "rom_size_kib": 128, "bytes": 131072, "checksum_ok": True}
+
+    # M2-15: SuperFamiconv re-encodes the BG1 tiles from the art's pixels
+    if spec.get("oracle"):
+        if sfc is None:
+            res["oracle"] = {"ok": False, "error": "--superfamiconv not given"}
+        else:
+            art_files, entry = read_art_dir(REPO / spec["art"])
+            built = build(art_files, entry, console="snes")
+            art_png = d / f"{spec['oracle']}.art.png"
+            art_png.write_bytes(built.outputs[f"png/{spec['oracle']}.png"])
+            res["oracle"] = sfc_oracle.check(sfc, art_png, (scene_dir / f"{name}.bg1.map").read_bytes(),
+                                             (scene_dir / f"{name}.cgram").read_bytes(),
+                                             (scene_dir / f"{name}.bg1.4bpp").read_bytes(), d / "sfc")
+        res["cart_ok"] = res["cart_ok"] and res["oracle"]["ok"]
+
+    # (c) and (d) in Mesen
+    run_dir = d / "run"
+    run_mesen.run(mesen, rom1, run_dir)
+    cmp = compare.compare(scene_dir, name, run_dir, "snes")
+    res["gate_c"] = bool(cmp.get("gate_c", {}).get("ok"))
+    res["gate_d"] = bool(cmp.get("gate_d", {}).get("ok"))
+    res["compare"] = {k: v for k, v in cmp.items() if k in ("gate_c", "gate_d")}
+    res["controls"] = {}
+    if spec.get("controls") and res["gate_d"]:
+        b = encode_snes(m)
+        back = {tuple(g): tuple(e[:3]) for e, g in cmp["gate_d"]["color_map"]}
+        shot = np.array(Image.open(run_dir / "screenshot.png").convert("RGB"))
+        seen = np.array([[back.get(tuple(px), (-1, -1, -1)) for px in row] for row in shot])
+        for c in spec["controls"]:
+            alt = ppu_ref_snes.render(b.vram(0), b.cgram, b.oam[0], b.registers, **CONTROLS[c])[..., :3]
+            expect = {(int(x), int(y)) for y, x in np.argwhere((alt != ref[..., :3]).any(axis=2))}
+            got = {(int(x), int(y)) for y, x in np.argwhere((alt != seen).any(axis=2))}
+            res["controls"][c] = {"ok": bool(expect) and got == expect, "variant_differs_px": len(expect),
+                                  "emulator_vs_variant_px": len(got)}
+    res["ok"] = all(res[k] for k in ("gate_a", "gate_b", "gate_c", "gate_d", "rom_deterministic", "rom_golden",
+                                     "cart_ok")) and all(c["ok"] for c in res["controls"].values())
+    return res
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--mesen", required=True, type=Path)
     ap.add_argument("--work-dir", required=True, type=Path)
+    ap.add_argument("--superfamiconv", type=Path, default=None,
+                    help="SuperFamiconv binary (proof/tools/build_superfamiconv.sh) for the M2-15 oracle")
     ap.add_argument("--update-goldens", action="store_true", help="record ROM sha256s (only after a reviewed change)")
     args = ap.parse_args(argv)
     goldens = json.loads(GOLDENS.read_text()) if GOLDENS.exists() else {}
-    results = [run_scene(s, args.mesen, args.work_dir, goldens, args.update_goldens) for s in SCENES]
+    results = [run_scene(s, args.mesen, args.work_dir, goldens, args.update_goldens, args.superfamiconv)
+               for s in SCENES]
     if args.update_goldens:
         GOLDENS.write_text(json.dumps(goldens, indent=2, sort_keys=True) + "\n")
     summary = {"ok": all(r["ok"] for r in results), "scenes": results}
@@ -158,7 +276,8 @@ def main(argv=None) -> int:
         gates = " ".join(f"{g}={'ok' if r[g] else 'FAIL'}" for g in ("gate_a", "gate_b", "gate_c", "gate_d"))
         print(f"{r['id']:20} {gates} rom={r['rom_sha256'][:12]} golden={'ok' if r['rom_golden'] else 'FAIL'} "
               f"deterministic={'ok' if r['rom_deterministic'] else 'FAIL'} "
-              f"cart={r['cart']}:{'ok' if r['cart_ok'] else 'FAIL'}")
+              f"cart={r['cart']}:{'ok' if r['cart_ok'] else 'FAIL'}"
+              + "".join(f" control:{k}={'ok' if v['ok'] else 'FAIL'}" for k, v in r.get("controls", {}).items()))
     print("PASS" if summary["ok"] else "FAIL")
     return 0 if summary["ok"] else 1
 

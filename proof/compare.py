@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Proof gates (c) and (d) for one NES scene: emulator memory == exported bytes, and the screenshot
+"""Proof gates (c) and (d) for one NES or SNES scene: emulator memory == exported bytes, and the screenshot
 matches the reference render under a color bijection.
 
-    compare.py --in-dir D --name N --run-dir O
+    compare.py --in-dir D --name N --run-dir O [--console nes|snes]
 
 Gate (c), byte-exact: O/palette.bin == D/N.pal, O/oam.bin == D/N.oam, O/nametable.bin == D/N.nam,
 O/chr.bin == D/N.chr. Mesen's palette RAM is a plain 32-byte array: writes are masked to 6 bits and
@@ -12,6 +12,10 @@ Gate (d): O/screenshot.png vs D/N.ref.png over the full 256x240 frame. No crop: 
 Mesen's NTSC overscan to 0, and any other screenshot size fails. Each expected color must map to
 exactly one screen color, no two expected colors to the same one, and every pixel must agree.
 On a gate (d) failure O/diff.png = [reference | screenshot | disagreeing pixels in red].
+SNES (D/N.vram.json present): gate (c) compares O/cgram.bin with D/N.cgram, O/oam.bin with D/N.oam (544 B,
+high table included), and all 64 KiB of O/vram.bin with the image vram.json describes: every exported blob
+at its word address, zeros elsewhere (the viewer clears VRAM first). Gate (d) is the same bijection over
+the 256x224 frame (Mesen crops its 239-line buffer to the 224 visible lines).
 Writes O/compare.json; exit 0 only if both gates pass. Import: compare(in_dir, name, run_dir) -> dict.
 """
 import argparse
@@ -24,6 +28,7 @@ from PIL import Image
 
 WIDTH, HEIGHT = 256, 240
 DUMPS = [("palette.bin", ".pal"), ("oam.bin", ".oam"), ("nametable.bin", ".nam"), ("chr.bin", ".chr")]
+SNES_HEIGHT = 224
 MAX_LISTED = 16
 
 
@@ -50,14 +55,60 @@ def gate_c(in_dir: Path, name: str, run_dir: Path) -> dict:
     return {"ok": all(f["ok"] for f in files.values()), "files": files}
 
 
-def gate_d(ref_path: Path, shot_path: Path, diff_path: Path) -> dict:
+def _diffs(expected: bytes, got: bytes, base: int = 0) -> list:
+    return [(base + i, expected[i] if i < len(expected) else None, got[i] if i < len(got) else None)
+            for i in range(max(len(expected), len(got)))
+            if i >= len(expected) or i >= len(got) or expected[i] != got[i]]
+
+
+def snes_vram_image(in_dir: Path, name: str) -> tuple:
+    """The 64 KiB VRAM image vram.json describes, and {region: (byte address, bytes)}."""
+    doc = json.loads((in_dir / f"{name}.vram.json").read_text(encoding="utf-8"))
+    image = bytearray(65536)
+    regions = {}
+    for region, r in doc["regions"].items():
+        addr = int(r["word_address"][1:], 16) * 2
+        data = (in_dir / doc["files"]["obj_chr" if region == "obj" else region]).read_bytes()
+        image[addr:addr + len(data)] = data
+        regions[region] = (addr, len(data))
+    return bytes(image), regions
+
+
+def gate_c_snes(in_dir: Path, name: str, run_dir: Path) -> dict:
+    files = {}
+    for dump, ext in (("cgram.bin", ".cgram"), ("oam.bin", ".oam")):
+        try:
+            d = _diffs((in_dir / f"{name}{ext}").read_bytes(), (run_dir / dump).read_bytes())
+        except OSError as exc:
+            files[ext] = {"ok": False, "error": str(exc), "first": []}
+            continue
+        files[ext] = {"ok": not d, "mismatches": len(d),
+                      "first": [{"offset": i, "expected": e, "got": g} for i, e, g in d[:MAX_LISTED]]}
+    try:
+        expected, regions = snes_vram_image(in_dir, name)
+        got = (run_dir / "vram.bin").read_bytes()
+    except (OSError, KeyError, ValueError) as exc:
+        files["vram"] = {"ok": False, "error": str(exc), "first": []}
+        return {"ok": False, "files": files}
+    d = _diffs(expected, got)
+    where = {}
+    for i, _, _ in d:
+        region = next((k for k, (a, n) in regions.items() if a <= i < a + n), "outside the exported blobs")
+        where[region] = where.get(region, 0) + 1
+    files["vram"] = {"ok": not d, "mismatches": len(d), "regions": {k: list(v) for k, v in regions.items()},
+                     "mismatches_by_region": where,
+                     "first": [{"offset": i, "expected": e, "got": g} for i, e, g in d[:MAX_LISTED]]}
+    return {"ok": all(f["ok"] for f in files.values()), "files": files}
+
+
+def gate_d(ref_path: Path, shot_path: Path, diff_path: Path, height: int = HEIGHT) -> dict:
     try:
         ref, shot = Image.open(ref_path).convert("RGBA"), Image.open(shot_path).convert("RGB")
     except OSError as exc:
         return {"ok": False, "error": str(exc)}
     for label, img in (("reference", ref), ("screenshot", shot)):
-        if img.size != (WIDTH, HEIGHT):
-            return {"ok": False, "error": f"{label} is {img.size[0]}x{img.size[1]}, expected 256x240"}
+        if img.size != (WIDTH, height):
+            return {"ok": False, "error": f"{label} is {img.size[0]}x{img.size[1]}, expected {WIDTH}x{height}"}
     expected, got = pixels(ref, 4), pixels(shot, 3)
     color_map, bad = bijection(expected, got)
     targets = Counter(color_map.values())
@@ -80,7 +131,7 @@ def gate_d(ref_path: Path, shot_path: Path, diff_path: Path) -> dict:
         result["mismatch_bbox"] = [min(xs), min(ys), max(xs), max(ys)]
         result["mismatch_rows"] = sorted(set(ys))
     if not result["ok"]:
-        write_diff(ref, shot, set(bad), expected, diff_path)
+        write_diff(ref, shot, set(bad), expected, diff_path, height)
     return result
 
 
@@ -106,22 +157,25 @@ def majority(pairs) -> dict:
     return {a: c.most_common(1)[0][0] for a, c in votes.items()}
 
 
-def write_diff(ref, shot, bad, expected, path: Path) -> None:
+def write_diff(ref, shot, bad, expected, path: Path, height: int = HEIGHT) -> None:
     """[reference | screenshot | disagreeing pixels in red over a dimmed reference]."""
     marks = [(255, 0, 0) if i in bad else (e[0] // 4, e[1] // 4, e[2] // 4) for i, e in enumerate(expected)]
-    mask = Image.frombytes("RGB", (WIDTH, HEIGHT), bytes(v for m in marks for v in m))
-    out = Image.new("RGB", (WIDTH * 3, HEIGHT))
+    mask = Image.frombytes("RGB", (WIDTH, height), bytes(v for m in marks for v in m))
+    out = Image.new("RGB", (WIDTH * 3, height))
     for n, img in enumerate((ref.convert("RGB"), shot, mask)):
         out.paste(img, (n * WIDTH, 0))
     out.save(path)
 
 
-def compare(in_dir, name, run_dir) -> dict:
+def compare(in_dir, name, run_dir, console=None) -> dict:
     in_dir, run_dir = Path(in_dir), Path(run_dir)
+    console = console or ("snes" if (in_dir / f"{name}.vram.json").exists() else "nes")
     (run_dir / "diff.png").unlink(missing_ok=True)
-    result = {"name": name,
-              "gate_c": gate_c(in_dir, name, run_dir),
-              "gate_d": gate_d(in_dir / f"{name}.ref.png", run_dir / "screenshot.png", run_dir / "diff.png")}
+    snes = console == "snes"
+    result = {"name": name, "console": console,
+              "gate_c": gate_c_snes(in_dir, name, run_dir) if snes else gate_c(in_dir, name, run_dir),
+              "gate_d": gate_d(in_dir / f"{name}.ref.png", run_dir / "screenshot.png", run_dir / "diff.png",
+                               SNES_HEIGHT if snes else HEIGHT)}
     result["ok"] = result["gate_c"]["ok"] and result["gate_d"]["ok"]
     (run_dir / "compare.json").write_text(json.dumps(result, indent=1) + "\n", encoding="utf-8")
     return result
@@ -155,8 +209,9 @@ def main(argv=None) -> int:
     ap.add_argument("--in-dir", required=True, type=Path)
     ap.add_argument("--name", required=True)
     ap.add_argument("--run-dir", required=True, type=Path)
+    ap.add_argument("--console", choices=("nes", "snes"), default=None, help="default: snes if N.vram.json exists")
     args = ap.parse_args(argv)
-    result = compare(args.in_dir, args.name, args.run_dir)
+    result = compare(args.in_dir, args.name, args.run_dir, args.console)
     print(report(result))
     if not result["gate_d"]["ok"] and (args.run_dir / "diff.png").exists():
         print(f"  diff: {args.run_dir / 'diff.png'}")

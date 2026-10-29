@@ -146,8 +146,10 @@ function summarize(result: CodeBuildResponse): string {
   for (const s of r.scenes ?? []) {
     if (!s.checked || !s.budgets) continue;
     const b = s.budgets;
-    lines.push(`  scene ${s.name}: ${s.legal ? "legal" : "NOT legal"}; BG tiles ${b.bg_tiles.used}/256, ` +
-      `OBJ tiles ${b.obj_tiles.used}/256, OAM ${b.oam.used}/64, max ${b.per_line.used}/8 per line`);
+    const extra = b.slivers ? `, ${b.slivers.used}/${b.slivers.max} slivers per line, VRAM ${b.vram.used}/${b.vram.max} bytes` : "";
+    lines.push(`  scene ${s.name}: ${s.legal ? "legal" : "NOT legal"}; BG tiles ${b.bg_tiles.used}/${b.bg_tiles.max}, ` +
+      `OBJ tiles ${b.obj_tiles.used}/${b.obj_tiles.max}, OAM ${b.oam.used}/${b.oam.max}, ` +
+      `max ${b.per_line.used}/${b.per_line.max} per line${extra}`);
   }
   return lines.join("\n");
 }
@@ -507,9 +509,9 @@ export function registerTools(server: McpServer, client: RetrogazeClient): void 
   // -----------------------------------------------------------------
   server.tool(
     "retro_code_bind",
-    "Code mode: get the console binding cheat sheet (color helpers like nes(byte), rg.scene, and every hardware rule) BEFORE writing a .px.js art file.",
+    "Code mode: get the console binding cheat sheet (color helpers like nes(byte) or snes(r, g, b), rg.scene, and every hardware rule) BEFORE writing a .px.js art file.",
     {
-      console: z.enum(["nes"]).default("nes").describe("Console (code mode supports nes in this build)"),
+      console: z.enum(["nes", "snes"]).default("nes").describe("Console (code mode supports nes and snes in this build)"),
       tier: z.enum(["like", "legal"]).default("legal").describe("like = palette and grid of the era; legal = real hardware limits"),
     },
     { readOnlyHint: true, destructiveHint: false },
@@ -532,7 +534,7 @@ export function registerTools(server: McpServer, client: RetrogazeClient): void 
     "Code mode: build a .px.js art file, check it against real console hardware, and write PNGs, a sprite sheet and (when console-legal) the console's bytes to <art dir>/out/<console>/<tier>/. Every violation names the source line to fix. Sends source text only.",
     {
       file_path: z.string().describe("Absolute path to the entry .px.js (or .px.ts) art file"),
-      console: z.enum(["nes"]).default("nes").describe("Console (code mode supports nes in this build)"),
+      console: z.enum(["nes", "snes"]).default("nes").describe("Console (code mode supports nes and snes in this build)"),
       tier: z.enum(["like", "legal"]).default("legal").describe("like = palette and grid of the era; legal = real hardware limits"),
       author: z.enum(["human", "llm", "mixed", "unknown"]).default("unknown").describe("Who wrote the code: pass llm when you wrote it"),
     },

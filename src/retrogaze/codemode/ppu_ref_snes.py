@@ -92,8 +92,11 @@ def _bg(vram: bytes, regs: dict, n: int):
     return layer[np.ix_(rows, cols)], lprio[np.ix_(rows, cols)]
 
 
-def _objs(vram: bytes, oam: bytes, regs: dict):
-    """(cgram index or -1, OBJ priority) per screen pixel, with the 32-per-line and 34-sliver limits."""
+def _objs(vram: bytes, oam: bytes, regs: dict, range_limit: int = 32, time_limit: int = 34,
+          fetch_hidden: bool = False):
+    """(cgram index or -1, OBJ priority) per screen pixel, with the 32-per-line and 34-sliver limits.
+    The keyword arguments describe the hardware by default; the emulator proof also renders variants (no
+    limit, tiles off the left edge fetched) as negative controls that Mesen must disagree with."""
     obsel = regs["OBSEL"]
     size, nn, base = obsel >> 5, (obsel >> 3) & 3, (obsel & 7) << 13
     second = (nn + 1) << 12
@@ -114,7 +117,7 @@ def _objs(vram: bytes, oam: bytes, regs: dict):
             end = y + h
             if (y <= s < end) or ((end & 0xFF) < y and s < (end & 0xFF)):
                 sel.append(i)
-                if len(sel) == 32:
+                if len(sel) == range_limit:
                     break
         fetched = 0
         row_idx = np.full(W, -1, dtype=np.int32)
@@ -122,7 +125,7 @@ def _objs(vram: bytes, oam: bytes, regs: dict):
         for i in reversed(sel):
             x, y, t, attr, w, h = sprites[i]
             cols = w // 8
-            left = cols + (int(x / 8) if x <= -8 and x != -256 else 0)
+            left = cols + (int(x / 8) if x <= -8 and x != -256 and not fetch_hidden else 0)
             gap = (s - y)
             vflip, hflip = bool(attr & 0x80), bool(attr & 0x40)
             if vflip:
@@ -131,7 +134,7 @@ def _objs(vram: bytes, oam: bytes, regs: dict):
             else:
                 yoff, rowoff = gap & 7, gap >> 3
             x0 = 0 if x == -256 else x
-            while left > 0 and fetched < 34:
+            while left > 0 and fetched < time_limit:
                 left -= 1
                 screen_col = cols - left - 1
                 tcol = left if hflip else screen_col
@@ -155,8 +158,8 @@ def _objs(vram: bytes, oam: bytes, regs: dict):
     return idx, pri
 
 
-def render(vram: bytes, cgram: bytes, oam: bytes, regs: dict) -> np.ndarray:
-    """(224, 256, 4) uint8 RGBA of what the PPU shows for one frame."""
+def render(vram: bytes, cgram: bytes, oam: bytes, regs: dict, **variant) -> np.ndarray:
+    """(224, 256, 4) uint8 RGBA of what the PPU shows for one frame. ``variant``: see ``_objs``."""
     assert len(vram) == 65536 and len(cgram) == 512 and len(oam) == 544
     if regs.get("BGMODE", 1) & 0x0F != 1:
         raise NotImplementedError("the reference PPU models BG mode 1 (BG3 priority bit clear)")
@@ -172,7 +175,7 @@ def render(vram: bytes, cgram: bytes, oam: bytes, regs: dict) -> np.ndarray:
             best = np.where(win, p, best)
             color = np.where(win, idx, color)
     if tm & 0x10:
-        idx, pri = _objs(vram, oam, regs)
+        idx, pri = _objs(vram, oam, regs, **variant)
         p = np.array(OBJ_PRIO)[pri]
         win = (idx >= 0) & (p > best)
         color = np.where(win, idx, color)

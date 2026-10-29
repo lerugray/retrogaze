@@ -1,6 +1,7 @@
 # Proof harness: tools, versions, how Mesen is run
 
-This is the harness for gates (c) and (d) of the proof of legality (CODE-MODE-SPEC §5) for NES, milestone M1.
+This is the harness for gates (c) and (d) of the proof of legality (CODE-MODE-SPEC §5) for NES (milestone M1,
+M1.1) and SNES (milestone M2, see "SNES (M2)" below).
 Everything below was run and checked on Ubuntu 24.04.5 (x86_64, 4 cores). The Mesen 2 behaviour described
 here was read from the source at the pinned commit and then confirmed by experiment.
 
@@ -15,6 +16,10 @@ here was read from the source at the pinned commit and then confirmed by experim
 | `run_mesen.py --mesen BIN --rom X.nes --out-dir O [--frames 10] [--timeout 60]` | runs Mesen headless with `run_mesen.lua`, checks the dumps |
 | `run_mesen.lua` | after N frames (plus a settle check) writes `screenshot.png`, `palette.bin`, `oam.bin`, `nametable.bin`, `chr.bin`, `run_info.txt` |
 | `compare.py --in-dir D --name N --run-dir O` | gate (c), byte-exact, and gate (d), color bijection. Writes `compare.json`, plus `diff.png` on a gate (d) failure. Importable: `compare(in_dir, name, run_dir) -> dict` |
+| `snes/viewer.s`, `snes/lorom.cfg` | M2: ca65 (65816) / ld65 SNES viewer ROM, LoROM, 4 x 32 KiB banks, internal header at `$00:FFC0` |
+| `build_snes_rom.py --in-dir D --name N --out X.sfc` | M2: validates `N.vram.json` and the files it names, writes `scene.inc`, runs ca65 + ld65, writes the header checksum, prints the sha256 |
+| `sfc_oracle.py` | M2-15: re-encodes a BG layer's tiles with SuperFamiconv from the art's own pixels and compares with the exported `.4bpp` |
+| `tools/build_superfamiconv.sh <src-dir> <prefix>` | builds SuperFamiconv from source at the pinned commit into `<prefix>/bin/superfamiconv` (idempotent) |
 | `make_selftest.py --out-dir D` | hand-built scenes in the exporter contract, with their own reference renderer |
 | `run_selftest.py --mesen BIN --work-dir W` | end-to-end self-test: build ×2 → Mesen → compare, plus the empirical checks |
 
@@ -31,6 +36,7 @@ Only `compare.py` and `run_selftest.py` need a third-party package (Pillow). Eve
 | SDL2 | `libsdl2-dev` / `libsdl2-2.0-0` 2.30.0+dfsg-1ubuntu3.1 | `MesenCore.so` links libSDL2 and libX11 dynamically. Neither is initialised in `--testRunner` mode |
 | other build tools | `make 4.3`, `zip 3.0` (the Linux pre-build step zips the native libraries), `git` | |
 | Python / Pillow | Python 3.13.17, Pillow 13.0.0 | the scripts need Python 3.8+ and use only stable Pillow APIs (`tobytes`, `frombytes`, `paste`) |
+| SuperFamiconv | `Optiroc/SuperFamiconv` tag v0.9.2, commit **`fda06602e62ba04391eca488ae4f2697916907d5`** (MIT) | M2-15 oracle. Built with CMake 3.28 + g++ 13 (Ubuntu 24.04). Here the build is bit-reproducible: two clean builds gave the same binary sha256 `c34165c0d669f2688c0d6ab0d08cce7621344b80f29180b53d494a3ea93d8d74` |
 
 Mesen 2 is **GPL-3.0**. It is used only as an external test tool: it is never linked, vendored or shipped, and
 nothing under `proof/` contains Mesen code.
@@ -239,3 +245,81 @@ M1.1 added three proof scenes, recorded here with the same toolchain (and M1's f
 | `nes_flips_8x16` | `examples/codemode/nes_flips.px.js` `flips16` | the same in 8x16 mode, where V flips the whole 16-row sprite (the tile pair swaps) | `7a76204ea7d365ac74c9b3fa28b36c7d311c44c21298804db3535fcf07195d67` |
 The recipe is implemented in `.github/workflows/codemode-proof.yml`, which also runs `run_codemode_proof.py` (real
 code-drawn scenes, `goldens.json`) and the MCP end-to-end check. Every step was run locally before it went into CI.
+
+## SNES (M2)
+
+### Viewer ROM (`snes/viewer.s`, `snes/lorom.cfg`, `build_snes_rom.py`)
+
+- LoROM, 128 KiB: bank `$00` holds the code, `.cgram`, `.oam` and the tilemaps; banks `$01`/`$02` the BG1/BG2
+  CHR (up to 32 KiB each); bank `$03` the BG3 CHR and the OBJ name tables. Internal header at `$00:FFC0`: title
+  `RETROGAZE CODE MODE`, map mode `$20`, ROM size `$07` (128 KiB), no SRAM; `build_snes_rom.py` writes the
+  checksum (16-bit sum of every byte, computed with complement `$FFFF` / checksum `$0000` in place) and its
+  complement. Vectors: RESET = `reset`, every other vector an `rti`.
+- Reset: native mode, 8-bit A, 16-bit X/Y, forced blank (`INIDISP = $8F`), NMI/IRQ/HDMA off; mosaic, windows,
+  color math, sub screen, BG4 and interlace registers zeroed. Then **all 64 KiB of VRAM is cleared** (a fixed-source
+  DMA of a zero word), every blob in `vram.json` is DMAed to its word address (`VMAIN = $80`, mode 1 into
+  `$2118/$2119`), `.cgram` (512 B) through `$2122` from CGRAM address 0, `.oam` (544 B, high table included)
+  through `$2104` from OAM address 0 (priority rotation off). `BGMODE`, `BGnSC`, `BG12NBA`, `BG34NBA`, `OBSEL`,
+  the six scroll registers (written twice) and `TM` come from `vram.json`; then `INIDISP = $0F`.
+- `vram.json` holds the allocator's map (`regions`: byte and word address and size of every blob), the PPU
+  register values and the exported file names. The only generated source is `scene.inc`.
+- BG vertical scroll is `$3FF` (-1): the first visible line is scanline 1 and a BG shows line scanline + VOFS
+  (Mesen `SnesPpu::GetTilemapData`: `realY = _scanline`). With VOFS = -1 BG row 0 is screen row 0. An OBJ with Y
+  byte `y` is evaluated on scanline `y` and drawn on the next one, i.e. screen row `y` (Y = top row).
+- Unused OBJs are parked at Y = 224 (below the 224-line screen; a small OBJ never wraps back) and X = -128
+  (fully left of the screen), never at X = -256.
+
+### Mesen run
+
+`run_mesen.py` picks the console from the ROM extension (`.sfc`). It adds these switches, checked against
+`UI/Config/SnesConfig.cs` at the pinned commit: `--snes.region=Ntsc`, `--snes.ramPowerOnState=AllZeros`,
+`--snes.enableRandomPowerOnState=false`, `--snes.overscan.{top=7,bottom=8,left=0,right=0}` (the default: it crops
+Mesen's 239-line buffer to the 224 visible lines, screen row r = scanline r + 1), `--snes.forceFixedResolution=false`,
+`--snes.blendHighResolutionModes=false`, `--snes.hideBgLayer1..4=false`, `--snes.hideSprites=false`,
+`--snes.ppuExtraScanlines{Before,After}Nmi=0`. `run_mesen.lua` (`RG_CONSOLE=snes`) dumps `cgram.bin` (512 B,
+`snesCgRam`), `oam.bin` (544 B, `snesSpriteRam`) and `vram.bin` (65536 B, `snesVideoRam`). `takeScreenshot()` is
+256x224 (`emu.getScreenSize()` reports the uncropped 256x239).
+
+### Gates for SNES (`compare.py`)
+
+- (c) `cgram.bin == .cgram`, `oam.bin == .oam`, and **all of VRAM**: `vram.bin` equals the image `vram.json`
+  describes (each blob at its address, zeros elsewhere, because the viewer clears VRAM first); a mismatch is
+  reported per region. One flipped byte in `.cgram`, `.oam`, `.bg1.4bpp`, `.bg3.map` or `.obj.4bpp` fails it
+  (checked on `snes_layers`).
+- (d) the same color bijection over 256x224. Mesen expands 5-bit channels by bit replication, Retrogaze by
+  `e(q) = (q * 255) // 31`; both are injective, so the bijection is sound. One changed reference pixel fails it.
+
+### The sprite-evaluation rules the proof pins (M2-14)
+
+Read in Mesen's `SnesPpu::EvaluateNextLineSprites` / `FetchSpriteData` / `FetchSpriteAttributes` and then
+confirmed in the emulator by negative controls: `run_codemode_proof.py` renders the scene with a wrong variant of
+the reference PPU and requires Mesen's screenshot to disagree with it on exactly the pixels where the variant
+differs from the model.
+
+| Rule | Model | Control (wrong variant) | Result |
+|---|---|---|---|
+| Range: 32 OBJs per line | OAM scanned from #0, the first 32 in range kept | `no_range_limit` on `snes_33_on_a_line` | Mesen differs from it on exactly the 56 visible px of OAM #32, lines 100-107: OAM #32 is dropped |
+| Time: 34 slivers per line | tiles of the kept OBJs fetched from the last kept one back to OAM #0, left to right, 34 fetched | `no_time_limit` on `snes_35_slivers` | 122 px = the right 8-px column of OAM #0 (the last painted, frontmost OBJ) is dropped |
+| Partly off-screen OBJs | only tiles that reach the screen are fetched: an OBJ at X = -12 (16 wide) costs 1 sliver, at X = 250 costs 1 | `fetch_hidden` (the left tile counts too) on `snes_35_slivers` and `snes_34_slivers` | 122 px and 128 px: with 34 counted slivers nothing is dropped; the hidden tile is not fetched |
+
+### SuperFamiconv oracle (M2-15)
+
+`sfc_oracle.py` takes the BG1 art as pxl rendered it (`png/<asset>.png`), and for every tile number the first
+tilemap entry that uses it (block, flips, palette). It writes one image per palette and that 16-color CGRAM slice
+(color 0 replaced by a color the tiles do not use), runs `superfamiconv tiles -B 4 -D -F`, and requires the result
+to equal the exported `.bg1.4bpp` tile for tile. The input never comes from code mode's tile bytes, so an encoder
+bug cannot cancel out. `snes_proof`: 72 of 72 tiles equal, palettes 0-2.
+
+### Results here (cc65 2.19-1, Mesen `b9fa69d`, SuperFamiconv `fda0660`)
+
+| Scene | Art | ROM sha256 | (c) | (d) |
+|---|---|---|---|---|
+| `snes_proof` | `examples/codemode/snes/snes_proof.px.js` `proof`: 32x32 hero = one 32x32 OBJ, slimes in a 2nd OBJ palette, BG1 tile set in 3 BG palettes | `8bcd3312acc736f83bb371ef0c373bfcc678081c23a2dd053231a6e6073b90b4` | pass | pass, 46 colors |
+| `snes_proof_tileset` | the same file, `land` (BG1 only) | `8c52807db636dee15a855a8b35bb71827f600b8648d14602270b5939638ed68b` | pass | pass, 30 colors |
+| `snes_layers` | `examples/codemode/snes/snes_layers.px.js`: BG1 + BG2 + 2bpp BG3 HUD + flipped OBJs | `74f77fefa5add2514d8594663d18d6ec98d93762cdc485a9c121795ab12b0687` | pass | pass, 24 colors |
+| `snes_34_slivers` | `snes_H11_pass`: 34 slivers incl. both edge straddlers | `345d7bc5f3fcef349ae10bb51e73ee3db8141eadc51509daaa15205439a898b3` | pass | pass |
+| `snes_33_on_a_line` | `snes_H10_fail` (`rom --force`) | `005efa05c1c9c6165b2f7417f790a459a78330d9e623bacb44e8d5f7c6b4ce06` | pass | pass: reference = art except OAM #32 on lines 100-107 |
+| `snes_35_slivers` | `snes_H11_fail` (`rom --force`) | `63d567139a71a21ac1b4763fe062ef743f39c03b6042125c9ebd1988e20c7f7c` | pass | pass: reference = art except OAM #0's right sliver, lines 100-115 |
+
+Each SNES ROM is built twice (identical bytes) and its header is checked (map mode `$20`, 128 KiB, valid checksum).
+One SNES scene takes about 1.2 s in Mesen here.
