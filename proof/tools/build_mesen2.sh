@@ -33,10 +33,13 @@ fi
 for tool in git make clang++ sdl2-config zip dotnet; do
   command -v "$tool" >/dev/null || { echo "build_mesen2: missing tool: $tool" >&2; exit 1; }
 done
-case "$(dotnet --version)" in
-  8.*) ;;
-  *) echo "build_mesen2: need .NET SDK 8.x, found $(dotnet --version)" >&2; exit 1 ;;
-esac
+# Newest installed 8.x SDK. A newer SDK beside it (GitHub's ubuntu-24.04 image ships .NET 10) would win by
+# default, so the build pins this one with a global.json in the source dir (below).
+sdk8=$(dotnet --list-sdks | awk '$1 ~ /^8\./ { v = $1 } END { print v }')
+if [ -z "$sdk8" ]; then
+  echo "build_mesen2: need .NET SDK 8.x, found: $(dotnet --list-sdks | awk '{ print $1 }' | tr '\n' ' ')" >&2
+  exit 1
+fi
 case "$(uname -m)" in
   x86_64) platform=linux-x64 ;;
   aarch64) platform=linux-arm64 ;;
@@ -51,6 +54,12 @@ fi
 head=$(git -C "$src" rev-parse HEAD)
 if [ "$head" != "$MESEN2_COMMIT" ]; then
   echo "build_mesen2: $src is at $head, expected $MESEN2_COMMIT" >&2
+  exit 1
+fi
+# Upstream has no global.json at this commit, so this is an untracked file and HEAD is unchanged.
+printf '{ "sdk": { "version": "%s", "rollForward": "disable" } }\n' "$sdk8" > "$src/global.json"
+if [ "$(cd "$src" && dotnet --version)" != "$sdk8" ]; then
+  echo "build_mesen2: could not pin .NET SDK $sdk8 in $src" >&2
   exit 1
 fi
 
