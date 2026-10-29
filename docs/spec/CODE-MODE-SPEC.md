@@ -1,6 +1,7 @@
 # Retrogaze Code Mode: spec
 
-**Status:** draft for build. This document is the spec only; no product code ships with it.
+**Status:** approved for build (§8 decided 2026-10-29; M1 in progress). This document is the spec only; no product
+code ships with it.
 **Base:** `main` at `5276809`. **Date:** 2026-10-29.
 **Owner:** Ray Weiss. **First consoles at full legality:** NES and SNES (Ray's pick).
 
@@ -960,6 +961,8 @@ the art, and M2-01…M2-16 are green.
 ## 8. Open questions only Ray can answer
 
 Each question has a recommended answer. The build proceeds on the recommendation unless Ray says otherwise.
+
+**Decided 2026-10-29:** Ray adopted every recommended answer below (Q1-Q11) and started M1.
 
 | # | Question | Recommended answer |
 |---|---|---|
