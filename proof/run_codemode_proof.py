@@ -11,6 +11,9 @@ bytes must match, and match proof/goldens.json), run it in Mesen, then check
   (d) Mesen's screenshot equals the reference render under a color bijection.
 Negative fixtures are built with --force; there the reference must differ from the art composite
 only on the sprite pixels the validator says the PPU drops.
+M1.1 scenes also check the cartridge (the iNES header of an MMC1 + CHR-RAM ROM: mapper 1, 128 KiB PRG,
+no CHR-ROM, 8 KiB CHR-RAM; Mesen's CHR dump is then the CHR-RAM the viewer filled) and, for the flip
+scenes, that the OAM really uses all four H/V flip combinations.
 Exit 0 only if all of it holds. Writes W/codemode_proof_summary.json.
 """
 import argparse
@@ -39,7 +42,17 @@ SCENES = [
     {"id": "nes_hero", "art": "examples/codemode/nes_hero.px.js", "scene": "title", "expect": "legal"},
     {"id": "nes_9_on_a_line", "art": "src/tests/fixtures/codemode/nes/nes_H9_fail.px.js", "scene": "line",
      "expect": "NES-H9"},
+    # M1.1: Ray's cartridge (MMC1, 8 KiB CHR-RAM), and 8x16 sprites + H/V flips (M1 review F7)
+    {"id": "nes_mmc1_chr_ram", "art": "examples/codemode/nes_mmc1.px.js", "scene": "room", "expect": "legal",
+     "cart": "mmc1"},
+    {"id": "nes_flips_8x8", "art": "examples/codemode/nes_flips.px.js", "scene": "flips8", "expect": "legal",
+     "flips": True},
+    {"id": "nes_flips_8x16", "art": "examples/codemode/nes_flips.px.js", "scene": "flips16", "expect": "legal",
+     "flips": True},
 ]
+# iNES header bytes 4-7 (and NES 2.0 byte 11) per viewer cartridge.
+CART_HEADERS = {"nrom": {"prg_16k": 1, "chr_8k": 1, "mapper": 0, "chr_ram": 0},
+                "mmc1": {"prg_16k": 8, "chr_8k": 0, "mapper": 1, "chr_ram": 8192}}
 GOLDENS = HERE / "goldens.json"
 
 
@@ -56,6 +69,19 @@ def predicted_drops(m) -> set:
                 if c.pix[y - c.top, u] >= 0 and c.x + u < 256:
                     out.add((c.x + u, y))
     return out
+
+
+def ines_header(rom: bytes) -> dict:
+    """The fields of an iNES / NES 2.0 header the viewer carts differ in."""
+    assert rom[:4] == b"NES\x1a", "not an iNES file"
+    nes2 = rom[7] & 0x0C == 0x08
+    shift = rom[11] & 0x0F if nes2 else 0
+    return {"prg_16k": rom[4], "chr_8k": rom[5], "mapper": (rom[6] >> 4) | (rom[7] & 0xF0),
+            "chr_ram": (64 << shift) if nes2 and shift else (8192 if rom[5] == 0 else 0)}
+
+
+def flip_bits(oam: bytes, used: int) -> set:
+    return {oam[4 * i + 2] & 0xC0 for i in range(used)}
 
 
 def run_scene(spec, mesen: Path, work: Path, goldens: dict, update: bool) -> dict:
@@ -95,6 +121,13 @@ def run_scene(spec, mesen: Path, work: Path, goldens: dict, update: bool) -> dic
     if update:
         goldens[sid] = sha1
     res["rom_golden"] = goldens.get(sid) == sha1
+    cart = build_nes_rom.cart_for(build_nes_rom.read_rom_json(scene_dir / f"{name}.rom.json"))
+    res["cart"] = cart
+    res["header"] = ines_header(rom1.read_bytes())
+    res["cart_ok"] = cart == spec.get("cart", "nrom") and res["header"] == CART_HEADERS[cart]
+    if spec.get("flips"):
+        res["flip_bits"] = sorted(flip_bits((scene_dir / f"{name}.oam").read_bytes(), len(m.oam[0])))
+        res["cart_ok"] = res["cart_ok"] and res["flip_bits"] == [0x00, 0x40, 0x80, 0xC0]
 
     # (c) and (d) in Mesen
     run_dir = d / "run"
@@ -103,7 +136,8 @@ def run_scene(spec, mesen: Path, work: Path, goldens: dict, update: bool) -> dic
     res["gate_c"] = bool(cmp.get("gate_c", {}).get("ok"))
     res["gate_d"] = bool(cmp.get("gate_d", {}).get("ok"))
     res["compare"] = {k: v for k, v in cmp.items() if k in ("gate_c", "gate_d")}
-    res["ok"] = all(res[k] for k in ("gate_a", "gate_b", "gate_c", "gate_d", "rom_deterministic", "rom_golden"))
+    res["ok"] = all(res[k] for k in ("gate_a", "gate_b", "gate_c", "gate_d", "rom_deterministic", "rom_golden",
+                                     "cart_ok"))
     return res
 
 
@@ -123,7 +157,8 @@ def main(argv=None) -> int:
     for r in results:
         gates = " ".join(f"{g}={'ok' if r[g] else 'FAIL'}" for g in ("gate_a", "gate_b", "gate_c", "gate_d"))
         print(f"{r['id']:20} {gates} rom={r['rom_sha256'][:12]} golden={'ok' if r['rom_golden'] else 'FAIL'} "
-              f"deterministic={'ok' if r['rom_deterministic'] else 'FAIL'}")
+              f"deterministic={'ok' if r['rom_deterministic'] else 'FAIL'} "
+              f"cart={r['cart']}:{'ok' if r['cart_ok'] else 'FAIL'}")
     print("PASS" if summary["ok"] else "FAIL")
     return 0 if summary["ok"] else 1
 

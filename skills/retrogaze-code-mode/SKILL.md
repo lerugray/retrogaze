@@ -47,6 +47,10 @@ Over MCP the same loop is `retro_code_bind`, `retro_code_build`, `retro_code_ver
 - Need more than 3 colors in one 8x8 spot of a sprite? Split it into layers named `obj:0`, `obj:1`: each becomes
   its own hardware sprite (they overlap; each costs scanline budget).
 - Reuse identical 8x8 tiles in backgrounds; the BG pattern table holds 256.
+- On a CHR-RAM cartridge (for example MMC1 with 8 KiB CHR-RAM), set `chr: "chr-ram"` in `rg.scene`: the budget is
+  the same, the exported `.chr` is what the game copies into CHR-RAM at boot, and `rom` builds an MMC1 viewer.
+- Flip placements (`{ flip: "x" | "y" | "xy" }`) reuse a sprite's tiles through the OAM flip bits; in 8x16 mode a
+  V flip turns the whole 16-row sprite over.
 
 ## Rules (generated from the rule registry; do not edit by hand)
 

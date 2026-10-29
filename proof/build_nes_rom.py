@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""Build the NES proof viewer ROM (NROM-128) for one exported scene.
+"""Build the NES proof viewer ROM for one exported scene.
 
     build_nes_rom.py --in-dir D --name N --out X.nes [--ca65 ca65] [--ld65 ld65]
 
-Reads D/N.chr (8192 B), D/N.pal (32 B), D/N.nam (1024 B), D/N.oam (256 B) and D/N.rom.json,
-assembles proof/nes/viewer.s with ca65 and links it with proof/nes/nrom.cfg. The scene files are
-pulled in by .incbin straight from D. Same inputs and toolchain -> byte-identical .nes.
-Prints "<sha256>  <out>". Standard library only.
+Reads D/N.chr (8192 B), D/N.pal (32 B), D/N.nam (1024 B), D/N.oam (256 B) and D/N.rom.json, and picks
+the cartridge from rom.json "chr" (absent in M1 exports, which means "rom"):
+  "rom"  NROM-128 (mapper 0): proof/nes/viewer.s + nrom.cfg; the .chr is the 8 KiB CHR-ROM.
+  "ram"  MMC1 (mapper 1), 128 KiB PRG, 8 KiB CHR-RAM, horizontal mirroring, PRG mode 3 (bank 7 fixed
+         at $C000): proof/nes/viewer_mmc1.s + mmc1.cfg; the .chr sits in PRG bank 0 and the viewer
+         copies it into CHR-RAM.
+The scene files are pulled in by .incbin straight from D. Same inputs and toolchain -> byte-identical
+.nes. Prints "<sha256>  <out>". Standard library only.
 """
 import argparse
 import hashlib
@@ -22,6 +26,11 @@ VIEWER = HERE / "nes" / "viewer.s"
 LINKER_CFG = HERE / "nes" / "nrom.cfg"
 SIZES = {".chr": 8192, ".pal": 32, ".nam": 1024, ".oam": 256}
 ROM_KEYS = {"sprite_size", "bg_table", "spr_table", "left8"}
+OPTIONAL_KEYS = {"chr"}
+CARTS = {
+    "nrom": {"viewer": VIEWER, "cfg": LINKER_CFG, "size": 16 + 16384 + 8192},
+    "mmc1": {"viewer": HERE / "nes" / "viewer_mmc1.s", "cfg": HERE / "nes" / "mmc1.cfg", "size": 16 + 8 * 16384},
+}
 NAME_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]*$")
 
 
@@ -31,8 +40,11 @@ class SceneError(ValueError):
 
 def read_rom_json(path: Path) -> dict:
     rom = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(rom, dict) or set(rom) != ROM_KEYS:
-        raise SceneError(f"{path}: keys must be exactly {sorted(ROM_KEYS)}, got {sorted(rom)}")
+    if not isinstance(rom, dict) or not ROM_KEYS <= set(rom) <= ROM_KEYS | OPTIONAL_KEYS:
+        raise SceneError(f"{path}: keys must be {sorted(ROM_KEYS)} (+ optional {sorted(OPTIONAL_KEYS)}), "
+                         f"got {sorted(rom) if isinstance(rom, dict) else rom!r}")
+    if rom.get("chr", "rom") not in ("rom", "ram"):
+        raise SceneError(f"{path}: chr must be \"rom\" (NROM viewer) or \"ram\" (MMC1 viewer)")
     if rom["sprite_size"] not in ("8x8", "8x16"):
         raise SceneError(f"{path}: sprite_size must be \"8x8\" or \"8x16\"")
     for key in ("bg_table", "spr_table"):
@@ -54,6 +66,11 @@ def check_scene(in_dir: Path, name: str) -> dict:
         if path.stat().st_size != size:
             raise SceneError(f"{path}: {path.stat().st_size} bytes, expected {size}")
     return read_rom_json(in_dir / f"{name}.rom.json")
+
+
+def cart_for(rom: dict) -> str:
+    """The viewer cartridge for a scene: CHR-ROM scenes run on NROM, CHR-RAM scenes on MMC1."""
+    return "mmc1" if rom.get("chr", "rom") == "ram" else "nrom"
 
 
 def ppu_registers(rom: dict) -> tuple:
@@ -83,16 +100,17 @@ def build(in_dir, name, out, ca65="ca65", ld65="ld65") -> str:
     """Build the ROM; return its sha256 (hex)."""
     in_dir, out = Path(in_dir).resolve(), Path(out).resolve()
     rom = check_scene(in_dir, name)
+    cart = CARTS[cart_for(rom)]
     with tempfile.TemporaryDirectory(prefix="rg-nesrom-") as tmp:
         tmp = Path(tmp)
         (tmp / "scene.inc").write_text(scene_include(name, rom), encoding="ascii")
         obj, nes = tmp / "viewer.o", tmp / "viewer.nes"
         run([ca65, "--cpu", "6502", "--include-dir", str(tmp), "--bin-include-dir", str(in_dir),
-             "-o", str(obj), str(VIEWER)])
-        run([ld65, "-C", str(LINKER_CFG), "-o", str(nes), str(obj)])
+             "-o", str(obj), str(cart["viewer"])])
+        run([ld65, "-C", str(cart["cfg"]), "-o", str(nes), str(obj)])
         data = nes.read_bytes()
-    if len(data) != 16 + 16384 + 8192:
-        raise RuntimeError(f"linked ROM is {len(data)} bytes, expected 24592")
+    if len(data) != cart["size"]:
+        raise RuntimeError(f"linked {cart_for(rom)} ROM is {len(data)} bytes, expected {cart['size']}")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(data)
     return hashlib.sha256(data).hexdigest()

@@ -53,6 +53,10 @@ python -m retrogaze.codemode verify ../examples/codemode/out/nes/legal
 python -m retrogaze.codemode rom ../examples/codemode/nes_proof.px.js     # viewer ROM, needs cc65
 ```
 
+NROM (CHR-ROM) is the default cartridge. For a CHR-RAM cartridge such as MMC1, set `chr: "chr-ram"` in the scene
+(see `examples/codemode/nes_mmc1.px.js`): the raw `.chr` and `.pal` binaries are ready for `.incbin`, and `rom`
+builds an MMC1 viewer that copies the `.chr` into CHR-RAM.
+
 Every violation names the source line that painted the bad pixels. The `proof/` harness runs the exported bytes in
 Mesen 2 to prove the result. See [docs/spec/CODE-MODE-SPEC.md](docs/spec/CODE-MODE-SPEC.md) and the agent skill in
 `skills/retrogaze-code-mode/`.

@@ -712,8 +712,8 @@ report. Layout under the entry file's directory: `out/<console>/<tier>/…`. Eve
 | `nes/<scene>.nam` | 1024 | 960 tile indices, row-major 32×30, then 64 attribute bytes `(BR<<6)\|(BL<<4)\|(TR<<2)\|TL`. Fields for non-existent rows 30-31 are 0 |
 | `nes/<scene>.oam` | 256 | 64 × `[top−1, tile, attr, X]`, with `attr = pal \| prio<<5 \| H<<6 \| V<<7`. In 8×16 mode `tile = (top_tile & $FE) \| table`. Unused entries have `Y = $FF` |
 | `nes/<scene>.ms.s` | text | metasprite tables, one per (asset, frame) placed in the scene: `x, y, tile, attr` per cell, terminated by `$80` (neslib-style; see §8 Q6) |
-| `nes/<scene>.rom.json`, `nes/<scene>.ref.png` | text, PNG | *M1:* PPU settings for the viewer ROM, and the reference-PPU render of the bytes (what the console must show) |
-| `nes/<scene>.s`, `.h` | text | ca65 include (`.segment "RODATA"`, labels, `.incbin`) and a cc65 C header with `extern const unsigned char …[]` |
+| `nes/<scene>.rom.json`, `nes/<scene>.ref.png` | text, PNG | *M1:* PPU settings for the viewer ROM, and the reference-PPU render of the bytes (what the console must show). *M1.1:* `rom.json` also says `"chr": "rom"` or `"ram"` (`chr: "chr-ram"` scenes), which picks the viewer cartridge (NROM or MMC1, §5.3) |
+| `nes/<scene>.s`, `.h` | text | ca65 include (`.segment "RODATA"`, labels, `.incbin`) and a cc65 C header with `extern const unsigned char …[]`. *M1.1:* a `chr-ram` scene keeps the `.chr` in `RODATA` (the game uploads it), never in a CHR-ROM `CHARS` segment |
 
 ### 4.4 SNES (legal tier)
 
@@ -793,6 +793,13 @@ scene in `examples/codemode/` and `src/tests/fixtures/codemode/proof/`.
 
 Each NMI then runs OAM DMA (`$4014 = $02`), sets scroll 0,0, and writes PPUMASK `$1E`. The data arrives by `.incbin`
 of the exported files, so **the bytes on screen are the bytes Ray ships**.
+
+*M1.1:* **`proof/nes/viewer_mmc1.s`** (ca65) is the same viewer on the cartridge of Ray's own NES project: MMC1
+(mapper 1), 128 KiB PRG, no CHR-ROM, 8 KiB CHR-RAM, horizontal mirroring, PRG mode 3 (bank 7 fixed at `$C000`), NES 2.0
+header. Every bank carries the MMC1 reset stub; reset sets MMC1 control `$0F`, maps PRG bank 0 (which holds the `.chr`) at
+`$8000` and copies the `.chr` into CHR-RAM `$0000-$1FFF` before the steps above. A scene with `chr: "chr-ram"` gets it
+automatically (`rom.json` `"chr": "ram"`); NROM stays the default. `examples/codemode/nes_mmc1.px.js` is the matching
+example, and the proof job runs it next to the NROM scenes, plus 8x8 and 8x16 flip scenes (`nes_flips.px.js`).
 
 **`proof/snes/viewer.s`** (ca65, 65816), LoROM. It:
 
@@ -980,7 +987,7 @@ Each question has a recommended answer. The build proceeds on the recommendation
 | **Q2** | **Are raster references allowed while authoring?** For example, an agent shown a FLUX image or a photo as reference while writing the code. | **No raster inputs to the tool, ever** (I1). Policy on what a person or agent *looks at* is Ray's. The recommendation: for paid-release art, the skill tells agents not to use AI-generated images as reference. |
 | **Q3** | **How should non-code outputs be classified?** Do Aseprite-mode sprites (an LLM issuing drawing commands, no rebuildable source) count as code-drawn? Should FLUX and Aseprite outputs get their own provenance stamp so `audit` can classify them positively? | **Aseprite outputs do not count** (no source to verify). **Stamp the other modes later**, in a separate small PR after M1 (it touches existing modes, so it is out of scope here). Until then `audit` treats "no code-mode provenance" as "not cleared for paid release". |
 | **Q4** | **Where may code mode run?** It executes user-supplied JS. | **Local first:** CLI, the local MCP server, and the API on localhost with `RETROGAZE_CODE_MODE=1`. **The public demo refuses it (403)** until it runs in an OS-isolated worker (no network, read-only, unprivileged). The web UI comes after M2. |
-| **Q5** | **Which NES cartridge model is the default budget?** This sets NES-H11 and NES-H12. | **NROM, 8 KiB CHR-ROM, split 256 BG / 256 sprite tiles.** Allow a per-scene `chr: { model: "nrom-split" \| "shared" \| "chr-ram" }` override. If Ray's current NES project uses another mapper, that mapper becomes the example's default. |
+| **Q5** | **Which NES cartridge model is the default budget?** This sets NES-H11 and NES-H12. | **NROM, 8 KiB CHR-ROM, split 256 BG / 256 sprite tiles.** Allow a per-scene `chr: { model: "nrom-split" \| "shared" \| "chr-ram" }` override. If Ray's current NES project uses another mapper, that mapper becomes the example's default. *M1.1:* Ray's project is MMC1 + 8 KiB CHR-RAM; `examples/codemode/nes_mmc1.px.js` uses `chr: "chr-ram"` and boots on the MMC1 viewer (§5.3). NROM stays the spec default. |
 | **Q6** | **Which homebrew toolchain should the include files target?** | **ca65 `.s` + cc65 `.h` on both consoles**, plus **neslib-style metasprites** for NES. Raw binaries always ship, so asm6, NESASM, WLA-DX or PVSnesLib users can `.incbin` them. Whatever toolchain Ray's projects use becomes the primary target. |
 | **Q7** | **Allow the SNES's undocumented OBJ sizes (OBSEL 6-7: 16×32 / 32×64)?** | **Off by default.** Opt in per scene with `allowUndocumentedObjSizes`. The SNES development manual didn't document them. |
 | **Q8** | **Should "legal" ever include sprite flicker or multiplexing**, to beat 8 per line (NES) or 32 / 34 (SNES)? | **No.** Legal = a stable single frame. A later, separate "legal-with-flicker" report can plan OAM cycling, but it is never the default verdict. |

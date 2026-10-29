@@ -10,7 +10,8 @@ here was read from the source at the pinned commit and then confirmed by experim
 |---|---|
 | `tools/build_mesen2.sh <src-dir> <prefix>` | builds Mesen 2 from source at the pinned commit into `<prefix>/bin/Mesen` (idempotent) |
 | `nes/viewer.s`, `nes/nrom.cfg` | ca65/ld65 viewer ROM, NROM-128: iNES header + 16 KiB PRG + 8 KiB CHR-ROM (= the scene `.chr`) |
-| `build_nes_rom.py --in-dir D --name N --out X.nes` | validates the scene files, writes `scene.inc`, runs ca65 + ld65, prints the sha256 |
+| `nes/viewer_mmc1.s`, `nes/mmc1.cfg` | M1.1: viewer ROM for an MMC1 cartridge with CHR-RAM (Ray's cartridge): NES 2.0 header, mapper 1, 8 x 16 KiB PRG, no CHR-ROM, 8 KiB CHR-RAM, horizontal mirroring, PRG mode 3. The `.chr` is in PRG bank 0 and is copied into CHR-RAM |
+| `build_nes_rom.py --in-dir D --name N --out X.nes` | validates the scene files, writes `scene.inc`, picks the cartridge from `rom.json` `chr` (`rom` → NROM, `ram` → MMC1), runs ca65 + ld65, prints the sha256 |
 | `run_mesen.py --mesen BIN --rom X.nes --out-dir O [--frames 10] [--timeout 60]` | runs Mesen headless with `run_mesen.lua`, checks the dumps |
 | `run_mesen.lua` | after N frames (plus a settle check) writes `screenshot.png`, `palette.bin`, `oam.bin`, `nametable.bin`, `chr.bin`, `run_info.txt` |
 | `compare.py --in-dir D --name N --run-dir O` | gate (c), byte-exact, and gate (d), color bijection. Writes `compare.json`, plus `diff.png` on a gate (d) failure. Importable: `compare(in_dir, name, run_dir) -> dict` |
@@ -135,8 +136,30 @@ and the check is sound.
 - iNES header: mapper 0, 1×16 KiB PRG, 1×8 KiB CHR, horizontal mirroring (only nametable 0 is shown).
 - The data comes in with `.incbin` straight from the export directory (`ca65 --bin-include-dir`). The only
   generated file is `scene.inc` (file names + the two register values).
-- `rom.json` must have exactly the keys `sprite_size`, `bg_table`, `spr_table`, `left8`. Scene names must match
+- `rom.json` must have the keys `sprite_size`, `bg_table`, `spr_table`, `left8`, plus (M1.1) an optional `chr`:
+  `"rom"` (the default, and what an M1 export without the key means) or `"ram"`. Scene names must match
   `[A-Za-z0-9_][A-Za-z0-9_.-]*`.
+
+## MMC1 + CHR-RAM viewer (`nes/viewer_mmc1.s`, M1.1)
+
+Ray's NES project runs on mapper 1 (MMC1) with no CHR-ROM, 8 KiB CHR-RAM, horizontal mirroring and MMC1 PRG
+mode 3 (bank 7 fixed at `$C000`), assembled by a JavaScript 6502 assembler from raw binaries. A scene that sets
+`chr: "chr-ram"` exports exactly those raw binaries (`.chr` 8192 B, `.pal` 32 B, `.nam`, `.oam`) and gets
+`"chr": "ram"` in `rom.json`, so `build_nes_rom.py` builds this viewer instead of the NROM one:
+
+- Header: NES 2.0, mapper 1 submapper 0, PRG 8 × 16 KiB, CHR-ROM 0, CHR-RAM `64 << 7` = 8192 B, no PRG-RAM,
+  horizontal mirroring, NTSC. ROM size 16 + 131072 = 131,088 bytes.
+- Every bank ends with the same 10-byte reset stub at `$xFF0` (`sei; ldx #$FF; txs; stx $8000; jmp reset`) and
+  vectors pointing at `$FFF0`: MMC1 may power on with any bank at `$C000`, the write of `$FF` resets the mapper
+  into PRG mode 3, and bank 7's identical stub continues. (Mesen powers on in mode 3, so it only exercises bank
+  7's stub; the others are for real hardware.)
+- Reset: as `viewer.s`, plus the MMC1 setup by serial writes: control `$0F` (8 KiB CHR mode, PRG mode 3, horizontal
+  mirroring), CHR banks 0/0, PRG bank 0 at `$8000`. With rendering off it copies the `.chr` (in PRG bank 0) to PPU
+  `$0000-$1FFF` (CHR-RAM), then `.pal`, `.nam`, `.oam` exactly as the NROM viewer, and the same NMI.
+- Gate (c) is unchanged: Mesen's `nesPpuMemory` `$0000-$1FFF` read is the CHR-RAM the viewer filled, compared
+  byte for byte with the `.chr`. A one-byte change to the `.chr` fails it (checked).
+- `run_codemode_proof.py` also checks the header of every proof ROM (`cart=mmc1:ok`) and, for the flip scenes,
+  that the `.oam` uses all four flip-bit combinations.
 - Deterministic: two builds give identical bytes, checked by `run_selftest.py` for every scene.
 
 ## Self-test (`make_selftest.py`, `run_selftest.py`)
@@ -206,5 +229,13 @@ codemode-proof:
 ```
 
 `cc65` on `ubuntu-24.04` is the same `2.19-1` package the goldens were recorded with, so the ROM sha256 goldens hold.
+
+M1.1 added three proof scenes, recorded here with the same toolchain (and M1's four goldens unchanged):
+
+| Scene | Art | What it proves | ROM sha256 |
+|---|---|---|---|
+| `nes_mmc1_chr_ram` | `examples/codemode/nes_mmc1.px.js` `room` | MMC1 + 8 KiB CHR-RAM, 8x16 sprites, 4 BG palettes | `b29e1b77d48d95088520ea77784068ff2d52b4a0b23c46ab5a6044187997dad7` |
+| `nes_flips_8x8` | `examples/codemode/nes_flips.px.js` `flips8` | one sprite placed as drawn and flipped X, Y, XY: all four OAM flip combinations, 8x8 | `5c1ca9b5bdddc0abd832170cb1303b1952b85563adf502b9b09281e273955002` |
+| `nes_flips_8x16` | `examples/codemode/nes_flips.px.js` `flips16` | the same in 8x16 mode, where V flips the whole 16-row sprite (the tile pair swaps) | `7a76204ea7d365ac74c9b3fa28b36c7d311c44c21298804db3535fcf07195d67` |
 The recipe is implemented in `.github/workflows/codemode-proof.yml`, which also runs `run_codemode_proof.py` (real
 code-drawn scenes, `goldens.json`) and the MCP end-to-end check. Every step was run locally before it went into CI.

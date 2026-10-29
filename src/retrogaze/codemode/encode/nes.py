@@ -182,6 +182,7 @@ def encode_scene(m: SceneModel) -> NesBytes:
         "bg_table": 0,
         "spr_table": 0 if (shared and ch == 8) else 1,
         "left8": m.left8,
+        "chr": "ram" if m.chr_model == "chr-ram" else "rom",   # the viewer: NROM (CHR-ROM) or MMC1 (CHR-RAM)
     }
     return NesBytes(chr=chr_images, pal=palette_bytes(m), nam=nams, oam=oams, rom=rom, tile_bytes=tbytes)
 
@@ -222,8 +223,14 @@ def ca65_include(m: SceneModel, b: NesBytes, files: dict[str, str], header: str)
     lines = [f"; {header}", f"; Scene '{m.name}': {m.sprite_size} sprites, chr model {m.chr_model}.", ""]
     exports = [f"{n}_pal", f"{n}_nam", f"{n}_oam", f"{n}_chr"]
     lines.append(".export " + ", ".join(exports))
-    lines += ["", '.segment "CHARS"', f'{n}_chr: .incbin "{files["chr"]}"', "", '.segment "RODATA"',
-              f'{n}_pal: .incbin "{files["pal"]}"', f'{n}_nam: .incbin "{files["nam"]}"',
+    if m.chr_model == "chr-ram":
+        # No CHR-ROM: the game copies these 8 KiB to CHR-RAM $0000-$1FFF during forced blank
+        # (proof/nes/viewer_mmc1.s does it on an MMC1 cartridge).
+        lines += ["", f"; CHR-RAM cartridge: copy {n}_chr (8192 bytes) to PPU $0000 before rendering.",
+                  '.segment "RODATA"', f'{n}_chr: .incbin "{files["chr"]}"']
+    else:
+        lines += ["", '.segment "CHARS"', f'{n}_chr: .incbin "{files["chr"]}"', "", '.segment "RODATA"']
+    lines += [f'{n}_pal: .incbin "{files["pal"]}"', f'{n}_nam: .incbin "{files["nam"]}"',
               f'{n}_oam: .incbin "{files["oam"]}"']
     if m.metatiles:
         lines += ["", f"; 16x16 metatiles: top-left, top-right, bottom-left, bottom-right, palette ({len(m.metatiles)})",
