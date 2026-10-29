@@ -25,7 +25,7 @@
       "type": "object",
       "required": ["rule", "tier", "scope", "severity", "message"],
       "properties": {
-        "rule": {"type": "string", "pattern": "^(NES-[LH][0-9]+|CM-[A-Z-]+)$"},
+        "rule": {"type": "string", "pattern": "^((NES|SNES)-[LH][0-9]+|CM-[A-Z-]+)$"},
         "tier": {"enum": ["like", "legal", "build"]},
         "scope": {"enum": ["image", "scene"]},
         "severity": {"enum": ["error", "warning", "info"]},

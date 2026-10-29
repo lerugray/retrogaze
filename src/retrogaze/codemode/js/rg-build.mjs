@@ -1,4 +1,4 @@
-// Retrogaze code-mode loader around the vendored pxl core (third_party/pxl).
+// Retrogaze code-mode loader around the vendored pxl core (third_party/pxl). NES and SNES bindings.
 //
 // Reads one JSON object on stdin: { entry, files: {name: source}, binding }.
 // Writes one JSON object on stdout: rendered assets (RGBA), per-pixel blame, rg.scene manifests.
@@ -60,12 +60,33 @@ function lab(c) {
 
 const input = JSON.parse(await readStdin());
 const B = input.binding;
-const legal = new Map(B.colors.map((h) => [parseHex(h), h.toUpperCase()]));
-const legalLab = [...legal.keys()].map((c) => [c, lab(c)]);
+// NES: a fixed table of colors. SNES: any 15-bit color, i.e. every channel one of the 32 levels e(q).
+const LEVELS = B.levels ?? null;
+const levelIndex = LEVELS ? new Map(LEVELS.map((v, q) => [v, q])) : null;
+const levelHex = (q) => "#" + q.map((x) => LEVELS[x].toString(16).padStart(2, "0")).join("").toUpperCase();
+const COLORS = LEVELS ? snesColors() : B.colors;
+const legal = LEVELS ? null : new Map(B.colors.map((h) => [parseHex(h), h.toUpperCase()]));
+const legalLab = LEVELS ? [] : [...legal.keys()].map((c) => [c, lab(c)]);
 const logs = [];
 const out = { ok: false, node: process.version, errors: [], logs, assets: [], scenes: [], tilesets: [], sheets: [], pins: null };
 
+function snesColors() {
+  const all = [];
+  for (let b = 0; b < 32; b++) for (let g = 0; g < 32; g++) for (let r = 0; r < 32; r++) all.push(levelHex([r, g, b]));
+  return all;
+}
+
+function isLegal(c) {
+  if (!LEVELS) return legal.has(c);
+  return levelIndex.has((c >>> 24) & 255) && levelIndex.has((c >>> 16) & 255) && levelIndex.has((c >>> 8) & 255);
+}
+
 function nearestHint(c) {
+  if (LEVELS) {
+    const near = (v) => LEVELS.reduce((best, lv, q) => (Math.abs(lv - v) < Math.abs(LEVELS[best] - v) ? q : best), 0);
+    const q = [24, 16, 8].map((sh) => near((c >>> sh) & 255));
+    return ` nearest legal color: ${levelHex(q)} = snes(${q.join(",")})`;
+  }
   const l = lab(c);
   let best = null, bd = Infinity;
   for (const [k, kl] of legalLab) {
@@ -95,7 +116,7 @@ function checkColorString(s, where) {
   const c = parseHex(s);
   if (c === undefined || c === TRANSPARENT) return;
   if ((c & 255) !== 255) throw new CMError("CM-STRICT-ALPHA", `${where}: color '${s}' has partial alpha; console pixels are opaque or transparent`, loc());
-  if (!legal.has(c)) throw new CMError("CM-STRICT-COLOR", `${where}: '${s}' is not a ${B.display_name} color;${nearestHint(c)}`, loc());
+  if (!isLegal(c)) throw new CMError("CM-STRICT-COLOR", `${where}: '${s}' is not a ${B.display_name} color;${nearestHint(c)}`, loc());
 }
 
 function checkDeep(v, where, depth = 0) {
@@ -145,13 +166,24 @@ if (B.console === "nes") {
     return B.nes_bytes[String(byte)];
   };
 }
+if (B.console === "snes") {
+  const five = (v) => Number.isInteger(v) && v >= 0 && v <= 31;
+  env.snes = (...a) => {
+    if (a.length !== 3 || !a.every(five)) throw new CMError("CM-SNES-RANGE", `snes(${a.map((v) => JSON.stringify(v)).join(", ")}): takes three integers 0-31 (red, green, blue)`, loc());
+    return levelHex(a);
+  };
+  env.bgr555 = (word) => {
+    if (!Number.isInteger(word) || word < 0 || word > 0x7fff) throw new CMError("CM-SNES-RANGE", `bgr555(${JSON.stringify(word)}): a CGRAM word is an integer 0x0000-0x7FFF (0bbbbbgggggrrrrr)`, loc());
+    return levelHex([word & 31, (word >> 5) & 31, (word >> 10) & 31]);
+  };
+}
 
 // rg: limits, grid and the hardware scene manifest.
 const scenes = [], tilesets = [];
 let pins = null;
 const rg = {
   console: B.console, tier: B.tier, tile: B.rg.tile, area: B.rg.area, screen: Object.freeze({ ...B.rg.screen }),
-  limits: Object.freeze({ ...B.rg.limits }), colors: Object.freeze([...B.colors]),
+  limits: Object.freeze({ ...B.rg.limits }), colors: Object.freeze([...COLORS]),
   scene(name, spec) {
     const l = loc();
     if (typeof name !== "string" || !name) throw new CMError("CM-SCENE", "rg.scene needs a name string first", l);

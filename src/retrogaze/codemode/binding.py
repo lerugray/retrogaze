@@ -2,9 +2,10 @@
 Console binding: what a ``.px.js`` drawing is handed for a console and tier.
 
 The binding fixes the drawer's palette to the console's colors, exposes the
-grid and limits as ``rg.*``, and names the color helper (``nes()``). It is
-serialized to JSON for ``js/rg-build.mjs`` and hashed into provenance, so a
-change here changes ``binding_sha256``.
+grid and limits as ``rg.*``, and names the color helper (``nes()`` on NES,
+``snes()`` / ``bgr555()`` on SNES). It is serialized to JSON for
+``js/rg-build.mjs`` and hashed into provenance, so a change here changes
+``binding_sha256``.
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ JS_DIR = Path(__file__).resolve().parent / "js"
 LOADER = JS_DIR / "rg-build.mjs"
 
 TIERS = ("like", "legal")
-SUPPORTED = {"nes": TIERS}
+SUPPORTED = {"nes": TIERS, "snes": TIERS}
 
 # ---------------------------------------------------------------------------
 # NES 2C02: bytes, canonical colors
@@ -65,6 +66,43 @@ NES_SCENE_KEYS = ["bg", "bgAt", "obj", "objSize", "backdrop", "palettes", "chr",
 MAX_PIXELS = 4 * 1024 * 1024
 
 
+# ---------------------------------------------------------------------------
+# SNES S-PPU: 15-bit BGR, canonical 8-bit expansion e(q) = (q * 255) // 31
+# ---------------------------------------------------------------------------
+
+#: The 32 displayable 8-bit values of a 5-bit channel: Retrogaze's existing expansion
+#: (palette.quantize_to_bit_depth, metadata._check_palette_valid), not bit replication.
+SNES_LEVELS: list[int] = [(q * 255) // 31 for q in range(32)]   # 5 bits per channel of the 15-bit profile
+SNES_Q: dict[int, int] = {v: q for q, v in enumerate(SNES_LEVELS)}
+
+
+def snes_hex(r5: int, g5: int, b5: int) -> str:
+    return f"#{SNES_LEVELS[r5]:02X}{SNES_LEVELS[g5]:02X}{SNES_LEVELS[b5]:02X}"
+
+
+def snes_word(hexstr: str) -> int:
+    """15-bit CGRAM word 0bbbbbgggggrrrrr of a canonical color; ValueError for any other color."""
+    v = int(hexstr.lstrip("#")[:6], 16)
+    r, g, b = (v >> 16) & 255, (v >> 8) & 255, v & 255
+    if r not in SNES_Q or g not in SNES_Q or b not in SNES_Q:
+        raise ValueError(f"{hexstr} is not a canonical SNES color (channels must be (q * 255) // 31)")
+    return (SNES_Q[b] << 10) | (SNES_Q[g] << 5) | SNES_Q[r]
+
+
+def word_hex(word: int) -> str:
+    return snes_hex(word & 31, (word >> 5) & 31, (word >> 10) & 31)
+
+
+SNES_LIMITS = {
+    "oam": 128, "perLine": 32, "slivers": 34, "bgPalettes": 8, "objPalettes": 8, "colorsPerPalette": 15,
+    "bg3Palettes": 8, "bg3ColorsPerPalette": 3, "bgTiles": 1024, "objTiles": 512, "vramBytes": 65536,
+    "screenW": 256, "screenH": 224,
+}
+
+SNES_SCENE_KEYS = ["bg1", "bg2", "bg3", "obj", "backdrop", "obsel", "palettes", "chr", "mode",
+                   "allowUndocumentedObjSizes"]
+
+
 def check_supported(console: str, tier: str) -> None:
     """Raise ``ValueError`` for a console or tier this milestone does not cover."""
     if tier not in TIERS:
@@ -81,6 +119,18 @@ def check_supported(console: str, tier: str) -> None:
 def binding_for(console: str, tier: str) -> dict:
     """The JSON binding handed to ``rg-build.mjs``."""
     check_supported(console, tier)
+    if console == "snes":
+        return {
+            "console": "snes",
+            "display_name": "SNES",
+            "tier": tier,
+            "color_fn": "snes",
+            "levels": list(SNES_LEVELS),
+            "default_palette": "empty",
+            "rg": {"tile": 8, "area": 8, "screen": {"w": 256, "h": 224}, "limits": dict(SNES_LIMITS)},
+            "scene_keys": list(SNES_SCENE_KEYS),
+            "max_pixels": MAX_PIXELS,
+        }
     return {
         "console": "nes",
         "display_name": "NES",
@@ -108,9 +158,16 @@ def binding_sha256(binding: dict) -> str:
 # Cheat sheet (agent skill, GET /code/binding, MCP retro_code_bind)
 # ---------------------------------------------------------------------------
 
+def _build_codes(console: str) -> dict[str, str]:
+    other = "CM-SNES-" if console == "nes" else "CM-NES-"
+    return {c: why for c, why in BUILD_CODES.items() if not c.startswith(other)}
+
+
 def render_cheatsheet(console: str = "nes") -> str:
     """Markdown cheat sheet: helpers, palette keys and the rule table. Generated, never hand-edited."""
     check_supported(console, "legal")
+    if console == "snes":
+        return _snes_cheatsheet()
     keys = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     lines = [
         f"### {console.upper()} binding",
@@ -132,5 +189,33 @@ def render_cheatsheet(console: str = "nes") -> str:
     for r in rules_for(console):
         lines.append(f"| {r.id} | {r.tier} | {r.scope} | {r.limit} | {r.text} |")
     lines += ["", "Build errors (exit 3):", ""]
-    lines += [f"- `{code}`: {why}" for code, why in BUILD_CODES.items()]
+    lines += [f"- `{code}`: {why}" for code, why in _build_codes(console).items()]
+    return "\n".join(lines) + "\n"
+
+
+def _snes_cheatsheet() -> str:
+    lines = [
+        "### SNES binding",
+        "",
+        "- Colors: `snes(r5, g5, b5)` (each 0-31) or `bgr555(word)` return the hex of a 15-bit color; hex literals "
+        "must be canonical SNES colors (channel = (q * 255) // 31).",
+        "  The active palette starts empty: bind keys with `pal({ s: snes(31, 24, 16), k: snes(0, 0, 4) })`.",
+        "- Disabled (they leave the palette): `lighting`, `lamp`, `bump`, `normals`, `glow` without `ramp`, "
+        "partial-alpha colors, `Math.random`, `Date`.",
+        "- `rg.scene(name, { bg1, bg2, bg3, obj: [[asset, x, y, { flip, size }]...], backdrop, obsel, palettes, chr, "
+        "mode, allowUndocumentedObjSizes })` declares one Mode 1 frame: BG1/BG2 4bpp (15 colors per tile), BG3 2bpp "
+        "(3), OBJ 4bpp (15 per OBJ). Back to front: backdrop, BG3, BG2, BG1, OBJ.",
+        "- OBJ sizes come in OBSEL pairs (8/16, 8/32, 8/64, 16/32, 16/64, 32/64); the decomposer picks the cheapest "
+        "pair unless `obsel` or a placement `size` (\"16x16\") pins it. 16x32/32x64 need "
+        "`allowUndocumentedObjSizes: true`.",
+        "- `rg.tileset(name)` marks a BG tile set (BG1; every 8x8 tile picks its own palette).",
+        "- Sprite layers named `obj:<n>` become overlapping OBJs.",
+        "",
+        "| Rule | Tier | Scope | Limit | Rule |",
+        "|---|---|---|---|---|",
+    ]
+    for r in rules_for("snes"):
+        lines.append(f"| {r.id} | {r.tier} | {r.scope} | {r.limit} | {r.text} |")
+    lines += ["", "Build errors (exit 3):", ""]
+    lines += [f"- `{code}`: {why}" for code, why in _build_codes("snes").items()]
     return "\n".join(lines) + "\n"

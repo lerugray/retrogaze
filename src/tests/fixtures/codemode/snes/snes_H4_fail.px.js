@@ -1,0 +1,3 @@
+pal({ r: snes(31, 8, 0) })
+sprite("s", { w: 8, h: 8 }, rect(0, 0, 8, 8, "r"))
+rg.scene("s", { obj: [["s", 16, -4]] })   // expect: SNES-H4

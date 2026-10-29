@@ -45,7 +45,7 @@ def test_exit_codes(art):
 def test_bind_prints_the_cheatsheet():
     r = cli("bind", "--console", "nes")
     assert r.returncode == 0 and "| NES-H9 |" in r.stdout
-    assert cli("bind", "--console", "snes").returncode == 2
+    assert cli("bind", "--console", "genesis").returncode == 2    # M2 made snes supported; genesis is M3
 
 
 def test_verify_and_audit_commands(art):

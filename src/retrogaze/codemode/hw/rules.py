@@ -50,6 +50,52 @@ NES_RULES: tuple[Rule, ...] = (
          kind="warning"),
 )
 
+SNES_RULES: tuple[Rule, ...] = (
+    Rule("SNES-L1", "like", "image",
+         "Every opaque channel value is a canonical 5-bit level e(q) = (q * 255) // 31 (15-bit BGR).", "32 768 colors"),
+    Rule("SNES-L2", "like", "image",
+         "Grid: BG images are multiples of 8 (never padded); OBJ images are padded with transparent pixels "
+         "on the right and bottom to multiples of 8 (reported, no drawn pixel moves).", "8 px"),
+    Rule("SNES-L3", "like", "image", "At most 16 opaque colors per 8x8 tile.", "16"),
+    Rule("SNES-L4", "like", "image", "Alpha is binary: every pixel is fully opaque or fully transparent."),
+    Rule("SNES-H1", "legal", "image",
+         "BG: each 8x8 tile of a 4bpp layer (BG1, BG2) uses at most 15 opaque colors, of the 2bpp BG3 at most 3 "
+         "(pixel value 0 is transparent).", "15 / 3"),
+    Rule("SNES-H2", "legal", "image",
+         "OBJ: the asset decomposes into OBJs of real OBJ sizes (8x8, 16x16, 32x32, 64x64; 16x32 and 32x64 are "
+         "undocumented); there is no 8x16 OBJ."),
+    Rule("SNES-H3", "legal", "image",
+         "OBJ: each OBJ as a whole (8x8 up to 64x64) uses at most 15 opaque colors: one palette per OBJ.", "15"),
+    Rule("SNES-H4", "legal", "image",
+         "OBJ: X in [-255, 255] and never -256 (counted on every line it covers); Y is 8-bit and an OBJ's rows "
+         "stay in 0-255 (taller spans wrap to the top of the screen).", "9-bit X, 8-bit Y"),
+    Rule("SNES-H5", "legal", "scene",
+         "One backdrop color (CGRAM 0); opaque pixels in the backdrop color still take a palette slot.", "1"),
+    Rule("SNES-H6", "legal", "scene",
+         "4bpp BG tile color sets (BG1 and BG2 share CGRAM 0-127) pack into 8 palettes of 15; BG3's 8 palettes "
+         "of 3 sit inside CGRAM 0-31 and are packed jointly with them.", "8 x 15"),
+    Rule("SNES-H7", "legal", "scene", "OBJ color sets pack into 8 palettes of 15 (CGRAM 128-255).", "8 x 15"),
+    Rule("SNES-H8", "legal", "scene",
+         "Every OBJ size in the frame belongs to one OBSEL pair (0-5; 6-7 only with allowUndocumentedObjSizes).",
+         "1 pair"),
+    Rule("SNES-H9", "legal", "scene", "At most 128 OBJs in the frame.", "128"),
+    Rule("SNES-H10", "legal", "scene",
+         "At most 32 OBJs on any line (range); the PPU keeps the first 32 in OAM order.", "32"),
+    Rule("SNES-H11", "legal", "scene",
+         "At most 34 8-px slivers on any line (time); only tiles that reach the screen count; slivers are "
+         "fetched from the highest OAM index down, so the frontmost OBJs lose theirs.", "34"),
+    Rule("SNES-H12", "legal", "scene",
+         "Unique BG tiles per layer fit its 10-bit tile numbers (dedup with H/V flips; the palette is per map "
+         "entry).", "1024"),
+    Rule("SNES-H13", "legal", "scene",
+         "OBJ tiles fit the two 256-tile OBJ name tables; each large OBJ is a block on the 16-column grid.", "2 x 256"),
+    Rule("SNES-H14", "legal", "scene",
+         "VRAM layout fits 64 KiB: BG CHR on 8 KiB, tilemaps on 2 KiB, the OBJ base on 16 KiB boundaries.",
+         "65 536 bytes"),
+    Rule("SNES-H15", "legal", "scene",
+         "Screen 256x224, BG mode 1, one 32x32 tilemap per BG layer (BG images at most 256x256).", "mode 1"),
+)
+
 # Errors raised while an art file is defined or rendered (exit code 3).
 BUILD_CODES: dict[str, str] = {
     "CM-STRICT-LIGHTING": "lighting/lamp/bump/normals multiply RGB and leave the palette",
@@ -59,6 +105,7 @@ BUILD_CODES: dict[str, str] = {
     "CM-STRICT-USE": "built-in pxl palettes are not console colors",
     "CM-NES-0D": "nes(0x0D) is forbidden ('blacker than black')",
     "CM-NES-RANGE": "nes() takes a byte 0x00-0x3F",
+    "CM-SNES-RANGE": "snes() takes three integers 0-31; bgr555() a word 0x0000-0x7FFF",
     "CM-DETERMINISM": "Math.random/Date are disabled so builds are reproducible",
     "CM-SCENE": "malformed rg.scene / rg.tileset",
     "CM-INCLUDE": "include() outside the submitted art files",
@@ -70,10 +117,12 @@ BUILD_CODES: dict[str, str] = {
     "CM-ROUNDTRIP": "internal: the rules and the encoder/reference PPU disagree (a code-mode bug; please report it)",
 }
 
-RULES_BY_ID: dict[str, Rule] = {r.id: r for r in NES_RULES}
+RULES_BY_ID: dict[str, Rule] = {r.id: r for r in NES_RULES + SNES_RULES}
 
 
 def rules_for(console: str) -> tuple[Rule, ...]:
     if console == "nes":
         return NES_RULES
+    if console == "snes":
+        return SNES_RULES
     raise KeyError(console)

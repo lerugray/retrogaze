@@ -38,7 +38,14 @@ def _summary(result) -> str:
         if v.get("hint"):
             lines.append(f"           hint: {v['hint']}")
     for s in r["scenes"]:
-        if s.get("checked"):
+        if s.get("checked") and r.get("console") == "snes":
+            b = s["budgets"]
+            lines.append(f"  scene {s['name']}: {'legal' if s['legal'] else 'NOT legal'}; OBSEL {s['obsel']} "
+                         f"({'/'.join(s['obj_sizes'])}); BG tiles {b['bg_tiles']['used']}/1024 per layer, "
+                         f"OBJ tiles {b['obj_tiles']['used']}/512, OAM {b['oam']['used']}/128, "
+                         f"max {b['per_line']['used']}/32 OBJs and {b['slivers']['used']}/34 slivers per line, "
+                         f"VRAM {b['vram']['used']}/65536 bytes, backdrop {s['backdrop']}")
+        elif s.get("checked"):
             b = s["budgets"]
             lines.append(f"  scene {s['name']}: {'legal' if s['legal'] else 'NOT legal'}; "
                          f"BG tiles {b['bg_tiles']['used']}/256, OBJ tiles {b['obj_tiles']['used']}/256, "
@@ -68,11 +75,13 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--json", action="store_true", help="print the report JSON")
         p.add_argument("--no-write", action="store_true")
 
-    r = sub.add_parser("rom", help="build an NES viewer ROM that shows a scene")
+    r = sub.add_parser("rom", help="build a viewer ROM that shows a scene (NES .nes or SNES LoROM .sfc)")
     r.add_argument("entry", type=Path)
+    r.add_argument("--console", default="nes", choices=("nes", "snes"))
     r.add_argument("--scene", default=None)
     r.add_argument("--out", type=Path, default=None)
-    r.add_argument("--force", action="store_true", help="also build scenes that break only runtime limits (H8/H9)")
+    r.add_argument("--force", action="store_true",
+                   help="also build scenes that break only runtime limits (NES-H8/H9, SNES-H10/H11)")
 
     v = sub.add_parser("verify", help="rebuild an output folder from its recorded sources and compare")
     v.add_argument("out_dir", type=Path)
@@ -98,16 +107,17 @@ def main(argv: list[str] | None = None) -> int:
         return result.exit_code
 
     if args.cmd == "rom":
-        script = REPO_ROOT / "proof" / "build_nes_rom.py"
+        script = REPO_ROOT / "proof" / ("build_snes_rom.py" if args.console == "snes" else "build_nes_rom.py")
         if not script.is_file() or not shutil.which("ca65") or not shutil.which("ld65"):
-            print("error: the viewer ROM needs cc65 (ca65, ld65) on PATH and proof/build_nes_rom.py", file=sys.stderr)
+            print(f"error: the viewer ROM needs cc65 (ca65, ld65) on PATH and proof/{script.name}", file=sys.stderr)
             return 2
         try:
-            files, scene = scene_bytes_for_rom(args.entry, args.scene, args.force)
+            files, scene = scene_bytes_for_rom(args.entry, args.scene, args.force, args.console)
         except CodeModeError as e:
             print(f"error {e.code}: {e}", file=sys.stderr)
             return 1 if e.code == "CM-INPUT" else 3
-        out = args.out or (args.entry.resolve().parent / "out" / "nes" / "rom" / f"{scene}.nes")
+        ext = "sfc" if args.console == "snes" else "nes"
+        out = args.out or (args.entry.resolve().parent / "out" / args.console / "rom" / f"{scene}.{ext}")
         out.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory() as tmp:
             for name, data in files.items():

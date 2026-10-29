@@ -24,18 +24,19 @@ from pathlib import Path
 import numpy as np
 
 from .. import __version__ as RETROGAZE_VERSION
-from . import ppu_ref
+from . import ppu_ref, ppu_ref_snes
 from .binding import binding_for, binding_sha256, check_supported, nes_byte_hex
+from .encode import snes as snes_enc
 from .encode.nes import EncodeError, c_header, ca65_include, encode_scene, metasprite_source, rom_json
-from .hw import nes
-from .hw.common import Asset, Violation, rgb_of
+from .hw import nes, snes
+from .hw.common import Asset, Violation, hex_of, rgb_of
 from .provenance import (
     AUTHORS, block, indexed_png, pixels_sha256, png_rgba, read_png_provenance, rgba_png, sha256_bytes,
     vendored_tree_sha256,
 )
 from .runner import REPO_ROOT, CodeModeError, read_art_dir, run_loader
 
-CODEMODE_VERSION = f"{RETROGAZE_VERSION}+codemode.m1"
+CODEMODE_VERSION = f"{RETROGAZE_VERSION}+codemode.m2"
 REPORT_SCHEMA = "retrogaze.report/1"
 MANIFEST = "manifest.json"
 HARDWARE_EXT = (".chr", ".pal", ".nam", ".oam")
@@ -87,11 +88,18 @@ def build(files: dict[str, str], entry: str, *, console: str = "nes", tier: str 
         return BuildResult(3, "error", {"schema": REPORT_SCHEMA, "console": console, "tier_requested": tier,
                                         "verdict": "error", "errors": e.errors})
     assets = {a["name"]: Asset.from_json(a) for a in raw.assets}
-    an = nes.analyze(assets, raw.scenes, raw.tilesets, raw.pins)
+    an = (snes if console == "snes" else nes).analyze(assets, raw.scenes, raw.tilesets, raw.pins)
 
     encoded, problems = {}, []
     for m in an.scenes:
         if not m.legal:
+            continue
+        if console == "snes":
+            b, problem = _roundtrip_snes(m)
+            if problem:
+                problems.append(problem)
+            else:
+                encoded[m.name] = b
             continue
         try:
             b = encode_scene(m)
@@ -125,7 +133,7 @@ def build(files: dict[str, str], entry: str, *, console: str = "nes", tier: str 
     prov = block(binding_sha=bsha, version=CODEMODE_VERSION, sources=files, entry=entry, author=author,
                  console=console, tier=tier, verdict=verdict)
     outputs = _outputs(an, assets, raw, encoded, prov, report,
-                       hardware=hardware and tier == "legal" and verdict == "legal")
+                       hardware=hardware and tier == "legal" and verdict == "legal", console=console)
     manifest = {
         "schema": "retrogaze.manifest/1",
         "provenance": {**prov, "renderer": {**prov["renderer"], "node": raw.node},
@@ -137,11 +145,51 @@ def build(files: dict[str, str], entry: str, *, console: str = "nes", tier: str 
     return BuildResult(0 if passed else 1, verdict, report, outputs, manifest, models=an.scenes)
 
 
+def _roundtrip_snes(m):
+    """Encode a legal SNES scene and render the bytes back; (bytes, None) or (None, CM-ROUNDTRIP violation)."""
+    try:
+        b = snes_enc.encode_scene(m)
+    except snes_enc.EncodeError as e:
+        return None, Violation("CM-ROUNDTRIP", f"encoder refused a scene the rules passed: {e}", scene=m.name)
+    for s in range(m.states):
+        ref = ppu_ref_snes.render(b.vram(s), b.cgram, b.oam[s], b.registers)
+        if not np.array_equal(ref, m.composites[s]):
+            bad = np.argwhere((ref != m.composites[s]).any(axis=2))[0]
+            return None, Violation("CM-ROUNDTRIP", f"reference PPU render differs from the art at ({bad[1]},{bad[0]}) "
+                                   f"in state {s}: encoder/rules disagreement", scene=m.name, frame=s)
+    return b, None
+
+
+def _snes_scene_report(m) -> dict:
+    words = lambda slots: [[f"${snes_enc.cgram_word(hex_of(c)):04X}" if c is not None else None for c in p]  # noqa: E731
+                           for p in slots if any(c is not None for c in p)]
+    return {
+        "mode": 1, "layers": m.layers, "obsel": m.obsel,
+        "obj_sizes": [f"{w}x{h}" for w, h in snes.OBSEL_PAIRS[m.obsel]],
+        "chr_model": m.chr_model, "states": m.states,
+        "backdrop": f"${snes_enc.cgram_word(m.backdrop_hex):04X}",
+        "bg_palettes": words(m.bg_slots), "obj_palettes": words(m.obj_slots),
+        "budgets": {
+            "bg_tiles": {"used": max((len(t) for ts in m.bg_tiles.values() for t in ts), default=0),
+                         "max": snes.BG_TILES},
+            "obj_tiles": {"used": max((sum(w * h // 64 for _, w, h, _ in bl) for bl in m.obj_blocks), default=0),
+                          "max": snes.OBJ_TILES},
+            "oam": {"used": max((len(o) for o in m.oam), default=0), "max": snes.MAX_OBJ},
+            "per_line": {"used": max((st["per_line"] for st in m.line_stats), default=0), "max": snes.PER_LINE},
+            "slivers": {"used": max((st["slivers"] for st in m.line_stats), default=0), "max": snes.SLIVERS},
+            "vram": {"used": m.vram.used if m.vram else m.vram_need, "max": snes.VRAM_BYTES},
+        },
+        "vram": m.vram.to_json() if m.vram else None,
+    }
+
+
 def _report(console, tier, verdict, an, assets, raw, encoded) -> dict:
     scenes = []
     for m in an.scenes:
         s = {"name": m.name, "declared": m.declared, "checked": m.checked, "legal": m.legal}
-        if m.checked:
+        if m.checked and console == "snes":
+            s.update(_snes_scene_report(m))
+        elif m.checked:
             ch = 16 if m.sprite_size == "8x16" else 8
             s.update({
                 "sprite_size": m.sprite_size, "chr_model": m.chr_model, "states": m.states,
@@ -216,6 +264,87 @@ def _cells_for(asset: str, frame: int, models, encoded) -> list[dict]:
     return []
 
 
+def _cells_for_snes(asset: str, frame: int, models, encoded) -> list[dict]:
+    for m in models:
+        if m.name not in encoded:
+            continue
+        for s in range(m.states):
+            for o in m.oam[s]:
+                if o.asset == asset and o.frame == frame:
+                    pl = m.spec["obj"][o.placement]
+                    px, py = int(pl[1]), int(pl[2])
+                    return [{"x": d.x - px, "y": d.top - py, "w": d.w, "h": d.h, "tile": d.tile, "palette": d.palette,
+                             "flip": ("x" if d.flip_h else "") + ("y" if d.flip_v else "")}
+                            for d in m.oam[s] if d.asset == asset and d.placement == o.placement]
+    return []
+
+
+def _snes_screen_index(m) -> tuple[np.ndarray, list[int]]:
+    """CGRAM indices of the legal SNES screen (state 0) and the 256 CGRAM colors, in the composite's paint order."""
+    idx = np.zeros((snes.H, snes.W), dtype=np.int32)
+    for layer in ("bg3", "bg2", "bg1"):
+        if layer not in m.layers:
+            continue
+        plane = m.planes[layer][0]
+        for ty in range(snes.H // 8):
+            for tx in range(32):
+                block = plane[8 * ty:8 * ty + 8, 8 * tx:8 * tx + 8]
+                p = int(m.tile_pal[layer][0][ty, tx])
+                slots = snes.q_slots(m.bg_slots, p) if layer == "bg3" else m.bg_slots[p]
+                pat = snes.index_pattern(block, slots).astype(np.int32)
+                base = 4 * p if layer == "bg3" else 16 * p
+                region = idx[8 * ty:8 * ty + 8, 8 * tx:8 * tx + 8]
+                idx[8 * ty:8 * ty + 8, 8 * tx:8 * tx + 8] = np.where(pat > 0, base + pat, region)
+    for o in reversed(m.oam[0]):
+        for v in range(o.h):
+            for u in range(o.w):
+                y, x = o.top + v, o.x + u
+                if o.pix[v, u] >= 0 and 0 <= y < snes.H and 0 <= x < snes.W:
+                    idx[y, x] = 128 + 16 * o.palette + int(o.pattern[v, u])
+    cg = snes_enc.cgram_bytes(m)
+    colors = [rgb_of(snes.word_hex(cg[2 * i] | (cg[2 * i + 1] << 8))) for i in range(256)]
+    return idx, colors
+
+
+def _snes_hardware(m, b, prov) -> dict[str, bytes]:
+    out: dict[str, bytes] = {}
+    n = m.name
+    header = (f"Retrogaze code mode, code-drawn (IPTC algorithmicMedia); pxl {prov['renderer']['commit'][:12]}; "
+              f"source {prov['source']['entry']}")
+    files: dict[str, str] = {}
+    for layer in m.layers:
+        ext = "4bpp" if snes.BPP[layer] == 4 else "2bpp"
+        files[f"{layer}_chr"] = f"{n}.{layer}.{ext}"
+        files[f"{layer}_map"] = f"{n}.{layer}.map"
+        out[f"snes/{n}.{layer}.{ext}"] = b.chr[layer][0]
+        for k in range(1, len(b.chr[layer])):
+            out[f"snes/{n}_c{k}.{layer}.{ext}"] = b.chr[layer][k]
+        out[f"snes/{n}.{layer}.map"] = b.maps[layer][0]
+        for st in range(1, m.states):
+            out[f"snes/{n}_s{st}.{layer}.map"] = b.maps[layer][st]
+    if b.obj_chr:
+        files["obj_chr"] = f"{n}.obj.4bpp"
+        out[f"snes/{n}.obj.4bpp"] = b.obj_chr[0]
+        for k in range(1, len(b.obj_chr)):
+            out[f"snes/{n}_c{k}.obj.4bpp"] = b.obj_chr[k]
+    files["cgram"], files["oam"] = f"{n}.cgram", f"{n}.oam"
+    out[f"snes/{n}.cgram"] = b.cgram
+    out[f"snes/{n}.oam"] = b.oam[0]
+    for st in range(1, m.states):
+        out[f"snes/{n}_s{st}.oam"] = b.oam[st]
+    for name, data in snes_enc.palette_slices(m, b.cgram).items():
+        out[f"snes/pal/{n}.{name}.pal"] = data
+    out[f"snes/{n}.vram.json"] = b.vram_json(n, files).encode()
+    ref = ppu_ref_snes.render(b.vram(0), b.cgram, b.oam[0], b.registers)
+    out[f"snes/{n}.ref.png"] = rgba_png(ref, prov, {"scene": n, "reference_ppu": True})
+    out[f"snes/{n}.s"] = snes_enc.ca65_include(m, b, files, header).encode()
+    out[f"snes/{n}.h"] = snes_enc.c_header(m, b, {k: out[f"snes/{f}"] for k, f in files.items()}, header).encode()
+    idx, colors = _snes_screen_index(m)
+    out[f"png/{n}.screen.idx.png"] = indexed_png(idx, colors, [], prov, {"scene": n, "indexed": "cgram"},
+                                                 m.composites[0])
+    return out
+
+
 def _screen_index(m, b) -> tuple[np.ndarray, list[int]]:
     """Palette-RAM indices of the legal screen (BG: attr*4+i, sprites: 16+pal*4+i) and its 32 colors."""
     tiles = np.stack(m.bg_tiles[0])
@@ -231,7 +360,7 @@ def _screen_index(m, b) -> tuple[np.ndarray, list[int]]:
     return out, colors
 
 
-def _outputs(an, assets, raw, encoded, prov, report, hardware: bool) -> dict[str, bytes]:
+def _outputs(an, assets, raw, encoded, prov, report, hardware: bool, console: str = "nes") -> dict[str, bytes]:
     out: dict[str, bytes] = {}
     for name, a in assets.items():
         if not a.exported:
@@ -270,7 +399,8 @@ def _outputs(an, assets, raw, encoded, prov, report, hardware: bool) -> dict[str
                              "duration": ms}
             base, _, k = fname.rpartition("_")
             asset, frame = (base, int(k)) if base in assets and k.isdigit() and assets[base].animated else (fname, 0)
-            cells = _cells_for(asset, frame, an.scenes, encoded) if hardware else []
+            cells = ((_cells_for_snes if console == "snes" else _cells_for)(asset, frame, an.scenes, encoded)
+                     if hardware else [])
             if cells:
                 hw[fname] = cells
         meta = {"app": "retrogaze code mode (pxl)", "image": f"{sh['name']}.png", "format": "RGBA8888",
@@ -281,7 +411,10 @@ def _outputs(an, assets, raw, encoded, prov, report, hardware: bool) -> dict[str
             meta["frameTags"] = tags
         out[f"sheets/{sh['name']}.png"] = rgba_png(sheet, prov, {"sheet": sh["name"]})
         out[f"sheets/{sh['name']}.json"] = _json({"frames": frames, "meta": meta})
-    if hardware:
+    if hardware and console == "snes":
+        for m in an.scenes:
+            out.update(_snes_hardware(m, encoded[m.name], prov))
+    elif hardware:
         header = (f"Retrogaze code mode, code-drawn (IPTC algorithmicMedia); pxl {prov['renderer']['commit'][:12]}; "
                   f"source {prov['source']['entry']}")
         for m in an.scenes:
@@ -420,7 +553,7 @@ def verify(out_dir: Path) -> tuple[int, list[str]]:
     return (1, msgs) if msgs else (0, [f"verified {len(man['outputs'])} outputs against {len(files)} source file(s)"])
 
 
-AUDIT_EXT = (".png", ".chr", ".pal", ".nam", ".oam", ".bin")
+AUDIT_EXT = (".png", ".chr", ".pal", ".nam", ".oam", ".bin", ".4bpp", ".2bpp", ".map", ".cgram")
 
 
 def audit(root: Path) -> tuple[int, list[str]]:
@@ -465,27 +598,41 @@ def audit(root: Path) -> tuple[int, list[str]]:
     return (1 if bad else 0), msgs
 
 
-def scene_bytes_for_rom(entry_path: Path, scene: str | None, force: bool) -> tuple[dict[str, bytes], str]:
-    files, name, _ = scene_for_rom(entry_path, scene, force)
+def scene_bytes_for_rom(entry_path: Path, scene: str | None, force: bool,
+                        console: str = "nes") -> tuple[dict[str, bytes], str]:
+    files, name, _ = scene_for_rom(entry_path, scene, force, console)
     return files, name
 
 
-def scene_for_rom(entry_path: Path, scene: str | None, force: bool):
+# Runtime limits: the bytes exist, the PPU drops sprites. ``rom --force`` builds such scenes on purpose.
+RUNTIME_RULES = {"nes": ("NES-H8", "NES-H9"), "snes": ("SNES-H10", "SNES-H11")}
+
+
+def scene_for_rom(entry_path: Path, scene: str | None, force: bool, console: str = "nes"):
     """Hardware files (and the model) for one scene, for the viewer ROM. ``force`` encodes even with
-    runtime-limit violations (NES-H8/H9), so negative fixtures can show what the console does."""
+    runtime-limit violations (NES-H8/H9, SNES-H10/H11), so negative fixtures can show what the console does."""
     files, entry = read_art_dir(Path(entry_path))
-    binding = binding_for("nes", "legal")
+    binding = binding_for(console, "legal")
     raw = run_loader(files, entry, binding)
     assets = {a["name"]: Asset.from_json(a) for a in raw.assets}
-    an = nes.analyze(assets, raw.scenes, raw.tilesets, raw.pins)
+    an = (snes if console == "snes" else nes).analyze(assets, raw.scenes, raw.tilesets, raw.pins)
     models = [m for m in an.scenes if (scene is None or m.name == scene)]
     if not models:
         raise CodeModeError("CM-INPUT", f"no scene named {scene!r}" if scene else "the art defines no scene")
     m = models[0] if scene else next((x for x in models if x.declared), models[0])
-    runtime_only = all(v.rule in ("NES-H8", "NES-H9") for v in m.violations if v.severity == "error")
+    runtime_only = all(v.rule in RUNTIME_RULES[console] for v in m.violations if v.severity == "error")
     if not m.legal and not (force and m.checked and runtime_only):
         rules = sorted({v.rule for v in m.violations if v.severity == "error"})
         raise CodeModeError("CM-INPUT", f"scene '{m.name}' is not console-legal ({', '.join(rules) or 'not checked'})")
+    if console == "snes":
+        b = snes_enc.encode_scene(m)
+        prov = block(binding_sha=binding_sha256(binding), version=CODEMODE_VERSION, sources=files, entry=entry,
+                     author="unknown", console="snes", tier="legal", verdict="legal" if m.legal else "fail")
+        hw = _snes_hardware(m, b, prov)
+        out = {k[len("snes/"):]: v for k, v in hw.items()
+               if k.startswith("snes/") and "/pal/" not in k and not k.endswith((".s", ".h"))
+               and not k[len("snes/"):].startswith(f"{m.name}_")}
+        return out, m.name, m
     b = encode_scene(m)
     ref = ppu_ref.render(b.chr[0], b.pal, b.nam[0], b.oam[0], b.rom)
     prov = block(binding_sha=binding_sha256(binding), version=CODEMODE_VERSION, sources=files, entry=entry,
