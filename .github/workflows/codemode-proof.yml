@@ -1,0 +1,92 @@
+name: Code mode proof
+
+# Proof of legality for code mode (docs/spec/CODE-MODE-SPEC.md §5): code-drawn scenes are exported,
+# built into NES viewer ROMs with cc65, run headless in Mesen 2, and compared byte for byte (palette RAM,
+# OAM, nametable, CHR) and pixel for pixel (screenshot vs the reference PPU, by color bijection).
+# Also runs the MCP end-to-end check of the retro_code_* tools.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/retrogaze/codemode/**"
+      - "src/retrogaze/codemode_routes.py"
+      - "proof/**"
+      - "third_party/pxl/**"
+      - "examples/codemode/**"
+      - "src/tests/fixtures/codemode/**"
+      - "mcp-server/**"
+      - ".github/workflows/codemode-proof.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/retrogaze/codemode/**"
+      - "src/retrogaze/codemode_routes.py"
+      - "proof/**"
+      - "third_party/pxl/**"
+      - "examples/codemode/**"
+      - "src/tests/fixtures/codemode/**"
+      - "mcp-server/**"
+      - ".github/workflows/codemode-proof.yml"
+  workflow_dispatch:
+
+jobs:
+  codemode-proof:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      # Mesen 2 is a framework-dependent .NET 8 app (GPL-3.0, used only as a test tool, never shipped).
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install cc65 and Mesen runtime libraries
+        run: sudo apt-get update && sudo apt-get install -y cc65 libsdl2-2.0-0 libx11-6
+
+      - name: Cache Mesen 2 build
+        id: mesen-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/mesen2
+          key: mesen2-${{ runner.os }}-b9fa69ddc6d0a331fb103fdb5eef6904305703c2-${{ hashFiles('proof/tools/build_mesen2.sh') }}
+
+      - name: Build Mesen 2 from the pinned commit
+        if: steps.mesen-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get install -y clang libsdl2-dev zip make
+          proof/tools/build_mesen2.sh "$RUNNER_TEMP/mesen2-src" ~/mesen2
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r src/requirements.txt
+
+      - name: Harness self-test (hand-built scenes, independent of the exporter)
+        run: python proof/run_selftest.py --mesen ~/mesen2/bin/Mesen --work-dir "$RUNNER_TEMP/proof-selftest"
+
+      - name: Code-mode proof (exported scenes, golden ROMs, negative fixture)
+        run: python proof/run_codemode_proof.py --mesen ~/mesen2/bin/Mesen --work-dir "$RUNNER_TEMP/proof-codemode"
+
+      - name: MCP end-to-end (retro_code_bind / build / verify)
+        run: |
+          cd mcp-server
+          npm ci
+          PYTHON=python ./test-e2e-codemode.sh
+
+      - name: Upload proof runs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codemode-proof
+          path: |
+            ${{ runner.temp }}/proof-selftest
+            ${{ runner.temp }}/proof-codemode
