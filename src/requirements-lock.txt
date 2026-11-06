@@ -30,7 +30,7 @@ httpx-sse==0.4.3
 hyperframe==6.1.0
 idna==3.18
 ImageIO==2.38.1
-iniconfig==2.3.0
+iniconfig==2.3.1
 jiter==0.16.0
 jsmin==3.0.1
 jsonschema==4.26.0
