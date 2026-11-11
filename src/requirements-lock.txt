@@ -43,7 +43,7 @@ networkx==3.6.1
 numpy==2.5.0
 packaging==26.2
 pillow==13.0.0
-pluggy==1.6.0
+pluggy==1.7.0
 postgrest==2.31.0
 propcache==0.5.4
 pycparser==3.0
