@@ -45,7 +45,7 @@ packaging==26.2
 pillow==13.0.0
 pluggy==1.6.0
 postgrest==2.31.0
-propcache==0.5.2
+propcache==0.5.4
 pycparser==3.0
 pydantic==2.13.4
 pydantic-settings==2.14.2
