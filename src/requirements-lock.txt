@@ -41,7 +41,7 @@ mcp==1.30.0
 multidict==6.9.1
 networkx==3.6.1
 numpy==2.5.0
-packaging==26.2
+packaging==26.3
 pillow==13.0.0
 pluggy==1.7.0
 postgrest==2.31.0
